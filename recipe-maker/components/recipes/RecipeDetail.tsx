@@ -4,9 +4,8 @@ import Link from 'next/link';
 import { useRecipe } from '@/lib/hooks/useRecipes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getTagFilterUrl } from '@/lib/utils/tag-url';
+import { ClickableTag } from '@/components/shared/ClickableTag';
 
 interface RecipeDetailProps {
   id: string;
@@ -42,27 +41,23 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Title */}
-      <h1 className="text-4xl font-bold tracking-tight">{recipe.name}</h1>
-
-      {/* Tags and Edit Button Row */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-2 flex-wrap">
-          {recipe.tags && recipe.tags.length > 0 ? (
-            recipe.tags.map((tag) => (
-              <Badge key={tag} className="hover:bg-primary/80 cursor-pointer" asChild>
-                <Link href={getTagFilterUrl(tag)}>
-                  {tag}
-                </Link>
-              </Badge>
-            ))
-          ) : (
-            <span className="text-sm text-muted-foreground">No tags</span>
-          )}
+      {/* Title with Tags and Edit Button Inline */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <h1 className="text-4xl font-bold tracking-tight flex-1">{recipe.name}</h1>
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
+            {recipe.tags && recipe.tags.length > 0 ? (
+              recipe.tags.map((tag) => (
+                <ClickableTag key={tag} tag={tag} />
+              ))
+            ) : (
+              <span className="text-sm text-muted-foreground">No tags</span>
+            )}
+          </div>
+          <Button asChild variant="outline">
+            <Link href={`/recipes/${id}/edit`}>Edit</Link>
+          </Button>
         </div>
-        <Button asChild variant="outline">
-          <Link href={`/recipes/${id}/edit`}>Edit</Link>
-        </Button>
       </div>
 
       {/* Two Column Layout - 5/12 and 7/12 split */}

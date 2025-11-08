@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getTagFilterUrl } from '@/lib/utils/tag-url';
+import { ClickableTag } from '@/components/shared/ClickableTag';
 import type { Recipe } from '@/types/recipe';
 
 interface RecipeCardProps {
@@ -36,16 +36,11 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
                 <CardContent>
                     <div className="flex gap-1 flex-wrap">
                         {recipe.tags.slice(0, 3).map((tag) => (
-                            <Badge
-                                key={tag}
-                                variant="secondary"
-                                className="text-xs hover:bg-secondary/80 cursor-pointer"
-                                asChild
-                            >
-                                <Link href={getTagFilterUrl(tag)} onClick={(e) => e.stopPropagation()}>
-                                    {tag}
-                                </Link>
-                            </Badge>
+                            <ClickableTag 
+                                key={tag} 
+                                tag={tag}
+                                onClick={(e) => e.stopPropagation()}
+                            />
                         ))}
                         {recipe.tags.length > 3 && (
                             <Badge variant="outline" className="text-xs">
