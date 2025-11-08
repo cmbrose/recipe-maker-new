@@ -52,9 +52,7 @@ export default function EditRecipePage({ params }: PageProps) {
             // Redirect to the recipe detail page
             router.push(`/recipes/${id}`);
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to update recipe: ${error.message}`);
-        },
+        // Remove onError to let RecipeEditor handle errors
     });
 
     // Delete mutation
@@ -68,9 +66,7 @@ export default function EditRecipePage({ params }: PageProps) {
             // Redirect to recipes list
             router.push('/recipes');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to delete recipe: ${error.message}`);
-        },
+        // Remove onError to let RecipeEditor handle errors
     });
 
     if (isLoading) {

@@ -39,9 +39,7 @@ export default function NewRecipePage() {
             // Redirect to the new recipe
             router.push(`/recipes/${recipe.id}`);
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to create recipe: ${error.message}`);
-        },
+        // Remove onError to let RecipeEditor handle errors
     });
 
     return (

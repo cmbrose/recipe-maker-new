@@ -79,7 +79,7 @@ function useAutoExpandingFieldArray<T>({
 // Validation schema
 // Note: Using unions with empty strings to support HTML input behavior
 // The form handles conversion to proper types on submit
-// Arrays allow empty strings for auto-expanding UX; empty items are filtered before save
+// Custom validation ensures filtered arrays are not empty
 const recipeSchema = z.object({
     name: z.string().min(1, 'Recipe name is required').max(200, 'Name is too long'),
     prepTime: z.union([z.number().int().min(0), z.literal('')]).optional(),
@@ -95,8 +95,20 @@ const recipeSchema = z.object({
             name: z.string().optional(),
             items: z.array(z.string()),
         })
-    ).min(1, 'At least one ingredient group is required'),
-    directions: z.array(z.string()).min(1, 'At least one direction is required'),
+    ).refine(
+        (groups) => {
+            // Check if there's at least one group with at least one non-empty item
+            return groups.some(group => group.items.some(item => item.trim() !== ''));
+        },
+        { message: 'At least one ingredient is required' }
+    ),
+    directions: z.array(z.string()).refine(
+        (directions) => {
+            // Check if there's at least one non-empty direction
+            return directions.some(dir => dir.trim() !== '');
+        },
+        { message: 'At least one direction is required' }
+    ),
 });
 
 export type RecipeFormValues = z.infer<typeof recipeSchema>;
@@ -154,6 +166,7 @@ function IngredientGroupItems({ control, groupIndex }: { control: Control<Recipe
 export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEditorProps) {
     const [tagInput, setTagInput] = useState('');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     // Initialize form with existing recipe data or defaults
     const form = useForm<RecipeFormValues>({
@@ -185,8 +198,8 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                 source: '',
                 tags: [],
                 notes: [],
-                ingredientGroups: [{ name: '', items: [] }],
-                directions: [],
+                ingredientGroups: [{ name: '', items: [''] }],
+                directions: [''],
             },
     });
 
@@ -197,6 +210,13 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
 
     // Use useWatch to avoid React Compiler warnings
     const tags = useWatch({ control: form.control, name: 'tags' }) || [];
+    const ingredientGroups = useWatch({ control: form.control, name: 'ingredientGroups' }) || [];
+    const directions = useWatch({ control: form.control, name: 'directions' }) || [];
+
+    // Trigger validation when ingredients or directions change
+    useEffect(() => {
+        form.trigger(['ingredientGroups', 'directions']);
+    }, [ingredientGroups, directions, form]);
 
     const { fields: directionFields, remove: removeDirection, inputRefs: directionInputRefs } = useAutoExpandingFieldArray({
         control: form.control,
@@ -213,26 +233,34 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
     });
 
     const handleSubmit = async (data: RecipeFormValues) => {
-        // Convert empty strings to undefined for optional numeric fields
-        // Filter out empty items from arrays
-        const cleanData = {
-            ...data,
-            prepTime: data.prepTime === '' ? undefined : Number(data.prepTime),
-            cookTime: data.cookTime === '' ? undefined : Number(data.cookTime),
-            totalTime: data.totalTime === '' ? undefined : Number(data.totalTime),
-            servings: data.servings === '' ? undefined : Number(data.servings),
-            previewUrl: data.previewUrl === '' ? undefined : data.previewUrl,
-            source: data.source === '' ? undefined : data.source,
-            ingredientGroups: data.ingredientGroups
-                .map(group => ({
-                    ...group,
-                    items: group.items.filter(item => item.trim() !== ''),
-                }))
-                .filter(group => group.items.length > 0),
-            directions: data.directions.filter(dir => dir.trim() !== ''),
-            notes: data.notes.filter(note => note.trim() !== ''),
-        };
-        await onSave(cleanData);
+        try {
+            setSubmitError(null);
+
+            // Convert empty strings to undefined for optional numeric fields
+            // Filter out empty items from arrays
+            const cleanData = {
+                ...data,
+                prepTime: data.prepTime === '' ? undefined : Number(data.prepTime),
+                cookTime: data.cookTime === '' ? undefined : Number(data.cookTime),
+                totalTime: data.totalTime === '' ? undefined : Number(data.totalTime),
+                servings: data.servings === '' ? undefined : Number(data.servings),
+                previewUrl: data.previewUrl === '' ? undefined : data.previewUrl,
+                source: data.source === '' ? undefined : data.source,
+                ingredientGroups: data.ingredientGroups
+                    .map(group => ({
+                        ...group,
+                        items: group.items.filter(item => item.trim() !== ''),
+                    }))
+                    .filter(group => group.items.length > 0),
+                directions: data.directions.filter(dir => dir.trim() !== ''),
+                notes: data.notes.filter(note => note.trim() !== ''),
+            };
+
+            await onSave(cleanData);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'An unknown error occurred';
+            setSubmitError(message);
+        }
     };
 
     const addTag = () => {
@@ -254,6 +282,17 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
         <>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+                    {/* Error Display */}
+                    {submitError && (
+                        <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
+                            <div className="flex items-center gap-2">
+                                <X className="h-4 w-4 text-destructive" />
+                                <p className="text-sm text-destructive font-medium">Error saving recipe</p>
+                            </div>
+                            <p className="text-sm text-destructive mt-1">{submitError}</p>
+                        </div>
+                    )}
+
                     {/* Basic Info */}
                     <div className="space-y-4">
                         <h2 className="text-2xl font-bold">Basic Information</h2>
@@ -376,6 +415,12 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                             </Button>
                         </div>
 
+                        {form.formState.errors.ingredientGroups?.root && (
+                            <div className="text-sm text-destructive">
+                                {form.formState.errors.ingredientGroups?.root.message}
+                            </div>
+                        )}
+
                         {ingredientGroupFields.map((group, groupIndex) => (
                             <div key={group.id} className="border rounded-lg p-4 space-y-3">
                                 <div className="flex items-center gap-2">
@@ -411,6 +456,11 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                     {/* Directions */}
                     <div className="space-y-4">
                         <h2 className="text-2xl font-bold">Directions</h2>
+                        {form.formState.errors.directions?.root && (
+                            <div className="text-sm text-destructive">
+                                {form.formState.errors.directions?.root.message}
+                            </div>
+                        )}
 
                         {directionFields.map((direction, index) => (
                             <div key={direction.id} className="space-y-2">
