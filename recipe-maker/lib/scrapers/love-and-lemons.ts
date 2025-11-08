@@ -13,20 +13,19 @@ import {
 
 export async function scrapeLoveAndLemons(
   html: string,
-  url: string
 ): Promise<RecipeScraperResult> {
   const $ = cheerio.load(html);
 
   // Try Type1 first (WPRM - more common in recent recipes)
   const type1Root = $('.wprm-recipe').first();
   if (type1Root.length) {
-    return scrapeType1($, type1Root, url);
+    return scrapeType1($, type1Root);
   }
 
   // Try Type2 (EasyRecipe - older recipes)
   const type2Root = $('.easyrecipe').first();
   if (type2Root.length) {
-    return scrapeType2($, type2Root, url);
+    return scrapeType2($, type2Root);
   }
 
   throw new Error('Recipe container not found');
@@ -38,7 +37,6 @@ export async function scrapeLoveAndLemons(
 function scrapeType1(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>,
-  url: string
 ): RecipeScraperResult {
   // Extract name
   const name = cleanText(root.find('h2.wprm-recipe-name').text());
@@ -107,7 +105,6 @@ function scrapeType1(
 function scrapeType2(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>,
-  url: string
 ): RecipeScraperResult {
   // Extract name
   const name = cleanText(root.find('h2.ERSName').text());

@@ -12,7 +12,7 @@ interface RouteParams {
   params: Promise<{
     id: string;
     recipeId: string;
-  };
+  }>;
 }
 
 /**

@@ -1,7 +1,7 @@
 // API response utilities for Next.js API routes
 
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z, core } from 'zod';
 
 /**
  * Standard API error response
@@ -45,8 +45,8 @@ export function errorResponse(
 /**
  * Handle validation errors from Zod
  */
-export function validationErrorResponse(error: z.ZodError): NextResponse {
-  const errors = error.errors.map((err) => ({
+export function validationErrorResponse(error: z.ZodError<unknown>): NextResponse {
+  const errors = error.issues.map((err: core.$ZodIssue) => ({
     field: err.path.join('.'),
     message: err.message,
   }));
@@ -87,7 +87,7 @@ export function serverErrorResponse(error: Error): NextResponse {
 /**
  * Wrap an async API handler with error handling
  */
-export function withErrorHandling<T extends any[], R>(
+export function withErrorHandling<T extends unknown[]>(
   handler: (...args: T) => Promise<NextResponse>
 ) {
   return async (...args: T): Promise<NextResponse> => {

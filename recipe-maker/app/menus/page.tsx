@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { useMenus } from '@/lib/hooks/useMenus';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Plus } from 'lucide-react';
 
 export default function MenusPage() {
   const { data, isLoading, error } = useMenus();
@@ -41,9 +42,12 @@ export default function MenusPage() {
             {menus.length} menu{menus.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/menus/new">Create Menu</Link>
-        </Button>
+        <Link href="/menus/new">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            New Menu
+          </Button>
+        </Link>
       </div>
 
       {menus.length === 0 ? (

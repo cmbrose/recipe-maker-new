@@ -10,7 +10,7 @@ import {
 interface RouteParams {
   params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
@@ -19,7 +19,8 @@ interface RouteParams {
  */
 export const POST = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
-    const menu = await clearMenu(params.id);
+    const { id } = await params;
+    const menu = await clearMenu(id);
     return successResponse(menu);
   }
 );

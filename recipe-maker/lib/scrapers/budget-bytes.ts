@@ -8,13 +8,11 @@ import {
   parseTime,
   parseServings,
   cleanText,
-  getBestImageUrl,
   createDirections,
 } from './utils';
 
 export async function scrapeBudgetBytes(
   html: string,
-  url: string
 ): Promise<RecipeScraperResult> {
   const $ = cheerio.load(html);
 

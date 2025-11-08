@@ -1,4 +1,8 @@
 // Prisma schema for Recipe Maker with Azure Cosmos DB (MongoDB API)
+//
+// Note: MongoDB connector uses Json type for complex nested structures.
+// Prisma's typed composite types are only available for SQL databases.
+// We handle type safety in our service layer with transformation functions.
 
 generator client {
   provider = "prisma-client-js"
@@ -17,8 +21,11 @@ model Recipe {
   cookTime    Int?     // in minutes
   totalTime   Int?     // in minutes
   servings    Int?
-  ingredients Json     // IngredientGroup[]
-  directions  Json     // Direction[]
+  // MongoDB limitation: complex nested types must use Json
+  // Runtime type: IngredientGroup[] (see types/recipe.ts)
+  ingredients Json     
+  // Runtime type: Direction[] (see types/recipe.ts)
+  directions  Json
   previewUrl  String?
   source      String?  // Original URL if scraped
   sourceKind  String   // 'url' | 'manual'

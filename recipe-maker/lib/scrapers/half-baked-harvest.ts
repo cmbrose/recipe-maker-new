@@ -13,7 +13,6 @@ import {
 
 export async function scrapeHalfBakedHarvest(
   html: string,
-  url: string
 ): Promise<RecipeScraperResult> {
   const $ = cheerio.load(html);
 
@@ -110,7 +109,7 @@ function extractPreviewImage(
   }
 
   // Try various lazy-load attributes
-  let previewUrl =
+  const previewUrl =
     img.attr('data-lazy-srcset') ||
     img.attr('data-lazy-src') ||
     img.attr('data-srcset') ||

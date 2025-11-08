@@ -22,7 +22,7 @@ export interface RecipeScraperResult {
 export interface ScraperConfig {
   domain: string;           // Domain this scraper handles (e.g., "budgetbytes.com")
   name: string;             // Display name (e.g., "Budget Bytes")
-  parser: (html: string, url: string) => Promise<RecipeScraperResult>;
+  parser: (html: string) => Promise<RecipeScraperResult>;
 }
 
 /**

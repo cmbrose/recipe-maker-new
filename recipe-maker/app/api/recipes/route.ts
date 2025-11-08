@@ -6,7 +6,6 @@ import { listRecipes, createRecipe } from '@/lib/services/recipe-service';
 import { CreateRecipeSchema, RecipeFiltersSchema } from '@/lib/utils/validation';
 import {
   successResponse,
-  errorResponse,
   validationErrorResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
@@ -19,35 +18,35 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
 
   // Parse query parameters
-  const filters: any = {};
+  const rawFilters: Record<string, string | string[] | number | undefined> = {};
 
   if (searchParams.has('search')) {
-    filters.search = searchParams.get('search');
+    rawFilters.search = searchParams.get('search') || undefined;
   }
 
   if (searchParams.has('tags')) {
     // Tags can be comma-separated
-    filters.tags = searchParams.get('tags')?.split(',').filter(Boolean);
+    rawFilters.tags = searchParams.get('tags')?.split(',').filter(Boolean);
   }
 
   if (searchParams.has('sourceKind')) {
-    filters.sourceKind = searchParams.get('sourceKind');
+    rawFilters.sourceKind = searchParams.get('sourceKind') || undefined;
   }
 
   if (searchParams.has('sort')) {
-    filters.sort = searchParams.get('sort');
+    rawFilters.sort = searchParams.get('sort') || undefined;
   }
 
   if (searchParams.has('page')) {
-    filters.page = parseInt(searchParams.get('page') || '1', 10);
+    rawFilters.page = parseInt(searchParams.get('page') || '1', 10);
   }
 
   if (searchParams.has('limit')) {
-    filters.limit = parseInt(searchParams.get('limit') || '20', 10);
+    rawFilters.limit = parseInt(searchParams.get('limit') || '20', 10);
   }
 
   // Validate filters
-  const validation = RecipeFiltersSchema.safeParse(filters);
+  const validation = RecipeFiltersSchema.safeParse(rawFilters);
   if (!validation.success) {
     return validationErrorResponse(validation.error);
   }

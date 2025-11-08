@@ -139,14 +139,14 @@ async function main() {
   // Create sample menus
   console.log('Creating sample menus...');
 
-  const weeknightDinners = await prisma.menu.create({
+  await prisma.menu.create({
     data: {
       name: 'Quick Weeknight Dinners',
       recipeIds: [pasta.id],
     },
   });
 
-  const comfortFood = await prisma.menu.create({
+  await prisma.menu.create({
     data: {
       name: 'Comfort Food Favorites',
       recipeIds: [pancakes.id, chickenSoup.id],

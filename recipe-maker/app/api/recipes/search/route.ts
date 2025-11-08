@@ -31,7 +31,11 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const sort = searchParams.get('sort') || 'created-desc';
 
   // Search recipes
-  const result = await searchRecipesByQuery(query, { page, limit, sort: sort as any });
+  const result = await searchRecipesByQuery(query, { 
+    page, 
+    limit, 
+    sort: sort as 'name-asc' | 'name-desc' | 'created-asc' | 'created-desc' | 'viewed-asc' | 'viewed-desc' 
+  });
 
   return successResponse(result);
 });

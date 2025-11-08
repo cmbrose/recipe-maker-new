@@ -1,12 +1,14 @@
 // Menu service - handles all menu CRUD operations and business logic
 
 import { prisma } from '@/lib/db/client';
+import { Prisma } from '@prisma/client';
 import type {
   Menu,
   CreateMenuInput,
   UpdateMenuInput,
 } from '@/types/menu';
 import type { Recipe } from '@/types/recipe';
+import { getRecipesByIds } from './recipe-service';
 
 /**
  * List all menus
@@ -45,16 +47,15 @@ export async function getMenuWithRecipes(id: string): Promise<(Menu & { recipes:
   }
 
   // Fetch all recipes in the menu
-  const recipes = await prisma.recipe.findMany({
-    where: {
-      id: { in: menu.recipeIds },
-    },
-  });
+  const recipes = await getRecipesByIds(menu.recipeIds);
 
+  // Create a map for faster lookup
+  const recipeMap = new Map(recipes.map((r) => [r.id, r]));
+  
   // Sort recipes in the order they appear in the menu
   const sortedRecipes = menu.recipeIds
-    .map((id) => recipes.find((r) => r.id === id))
-    .filter((r): r is Recipe => r !== undefined) as Recipe[];
+    .map((id) => recipeMap.get(id))
+    .filter((r): r is Recipe => r !== undefined);
 
   return {
     ...(menu as Menu),
@@ -83,11 +84,11 @@ export async function updateMenu(input: UpdateMenuInput): Promise<Menu> {
   const { id, ...data } = input;
 
   // Remove undefined fields
-  const updateData: any = {};
+  const updateData: Prisma.MenuUpdateInput = {};
   Object.keys(data).forEach((key) => {
-    const value = (data as any)[key];
+    const value = (data as Record<string, unknown>)[key];
     if (value !== undefined) {
-      updateData[key] = value;
+      (updateData as Record<string, unknown>)[key] = value;
     }
   });
 

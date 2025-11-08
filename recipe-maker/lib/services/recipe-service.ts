@@ -1,13 +1,50 @@
 // Recipe service - handles all recipe CRUD operations and business logic
 
 import { prisma } from '@/lib/db/client';
+import { Prisma, type Recipe as PrismaRecipe } from '@prisma/client';
 import type {
   Recipe,
   CreateRecipeInput,
   UpdateRecipeInput,
   RecipeFilters,
   RecipeListResult,
+  IngredientGroup,
+  Direction,
 } from '@/types/recipe';
+
+/**
+ * Transform Prisma recipe to our Recipe type
+ * 
+ * Prisma's MongoDB connector uses JsonValue for complex nested structures (ingredients, directions).
+ * This is a limitation of MongoDB support - typed composite types are only available for SQL databases.
+ * 
+ * This function provides type-safe transformation from Prisma's database model to our application model.
+ * The cast is safe because:
+ * 1. We control all writes through createRecipe/updateRecipe which enforce the correct structure
+ * 2. The database schema validation ensures data integrity
+ * 3. Runtime validation could be added here if needed (e.g., with Zod)
+ */
+function toRecipe(dbRecipe: PrismaRecipe): Recipe {
+  return {
+    id: dbRecipe.id,
+    name: dbRecipe.name,
+    prepTime: dbRecipe.prepTime ?? undefined,
+    cookTime: dbRecipe.cookTime ?? undefined,
+    totalTime: dbRecipe.totalTime ?? undefined,
+    servings: dbRecipe.servings ?? undefined,
+    // Safe cast: we control all writes and ensure correct structure
+    ingredients: dbRecipe.ingredients as unknown as IngredientGroup[],
+    directions: dbRecipe.directions as unknown as Direction[],
+    previewUrl: dbRecipe.previewUrl ?? undefined,
+    source: dbRecipe.source ?? undefined,
+    sourceKind: dbRecipe.sourceKind as 'url' | 'manual',
+    tags: dbRecipe.tags,
+    notes: dbRecipe.notes,
+    lastViewed: dbRecipe.lastViewed ?? undefined,
+    createdAt: dbRecipe.createdAt,
+    updatedAt: dbRecipe.updatedAt,
+  };
+}
 
 /**
  * List recipes with filtering, sorting, and pagination
@@ -23,7 +60,7 @@ export async function listRecipes(filters: RecipeFilters = {}): Promise<RecipeLi
   } = filters;
 
   // Build where clause
-  const where: any = {};
+  const where: Prisma.RecipeWhereInput = {};
 
   // Search by name (case-insensitive, word-based matching)
   if (search) {
@@ -47,7 +84,7 @@ export async function listRecipes(filters: RecipeFilters = {}): Promise<RecipeLi
 
   // Parse sort parameter (format: "field-direction")
   const [sortField, sortDirection] = sort.split('-') as [string, 'asc' | 'desc'];
-  const orderBy: any = {};
+  const orderBy: Prisma.RecipeOrderByWithRelationInput = {};
 
   switch (sortField) {
     case 'name':
@@ -79,7 +116,7 @@ export async function listRecipes(filters: RecipeFilters = {}): Promise<RecipeLi
   const totalPages = Math.ceil(total / limit);
 
   return {
-    recipes: recipes as Recipe[],
+    recipes: recipes.map(toRecipe),
     total,
     page,
     limit,
@@ -95,7 +132,18 @@ export async function getRecipe(id: string): Promise<Recipe | null> {
     where: { id },
   });
 
-  return recipe as Recipe | null;
+  return recipe ? toRecipe(recipe) : null;
+}
+
+/**
+ * Get multiple recipes by IDs
+ */
+export async function getRecipesByIds(ids: string[]): Promise<Recipe[]> {
+  const recipes = await prisma.recipe.findMany({
+    where: { id: { in: ids } },
+  });
+  
+  return recipes.map(toRecipe);
 }
 
 /**
@@ -106,7 +154,7 @@ export async function getRecipeByUrl(url: string): Promise<Recipe | null> {
     where: { source: url },
   });
 
-  return recipe as Recipe | null;
+  return recipe ? toRecipe(recipe) : null;
 }
 
 /**
@@ -120,8 +168,8 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
       cookTime: input.cookTime,
       totalTime: input.totalTime,
       servings: input.servings,
-      ingredients: input.ingredients as any,
-      directions: input.directions as any,
+      ingredients: input.ingredients as unknown as Prisma.InputJsonValue,
+      directions: input.directions as unknown as Prisma.InputJsonValue,
       previewUrl: input.previewUrl,
       source: input.source,
       sourceKind: input.sourceKind,
@@ -130,7 +178,7 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
     },
   });
 
-  return recipe as Recipe;
+  return toRecipe(recipe);
 }
 
 /**
@@ -140,11 +188,16 @@ export async function updateRecipe(input: UpdateRecipeInput): Promise<Recipe> {
   const { id, ...data } = input;
 
   // Remove undefined fields
-  const updateData: any = {};
+  const updateData: Prisma.RecipeUpdateInput = {};
   Object.keys(data).forEach((key) => {
-    const value = (data as any)[key];
+    const value = (data as Record<string, unknown>)[key];
     if (value !== undefined) {
-      updateData[key] = value;
+      // Handle Json fields that need special casting
+      if (key === 'ingredients' || key === 'directions') {
+        (updateData as Record<string, unknown>)[key] = value as unknown as Prisma.InputJsonValue;
+      } else {
+        (updateData as Record<string, unknown>)[key] = value;
+      }
     }
   });
 
@@ -153,7 +206,7 @@ export async function updateRecipe(input: UpdateRecipeInput): Promise<Recipe> {
     data: updateData,
   });
 
-  return recipe as Recipe;
+  return toRecipe(recipe);
 }
 
 /**
@@ -247,7 +300,7 @@ export async function getRecentlyViewedRecipes(limit = 10): Promise<Recipe[]> {
     take: limit,
   });
 
-  return recipes as Recipe[];
+  return recipes.map(toRecipe);
 }
 
 /**
@@ -261,5 +314,5 @@ export async function getRecentlyCreatedRecipes(limit = 10): Promise<Recipe[]> {
     take: limit,
   });
 
-  return recipes as Recipe[];
+  return recipes.map(toRecipe);
 }

@@ -13,7 +13,6 @@ import {
 
 export async function scrapeSallysBakingAddiction(
   html: string,
-  url: string
 ): Promise<RecipeScraperResult> {
   const $ = cheerio.load(html);
 
