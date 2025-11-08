@@ -1,0 +1,46 @@
+// Prisma schema for Recipe Maker with Azure Cosmos DB (MongoDB API)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("COSMOS_DB_CONNECTION_STRING")
+}
+
+// Recipe model - main entity for storing recipes
+model Recipe {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  prepTime    Int?     // in minutes
+  cookTime    Int?     // in minutes
+  totalTime   Int?     // in minutes
+  servings    Int?
+  ingredients Json     // IngredientGroup[]
+  directions  Json     // Direction[]
+  previewUrl  String?
+  source      String?  // Original URL if scraped
+  sourceKind  String   // 'url' | 'manual'
+  tags        String[]
+  notes       String[]
+  lastViewed  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tags])
+  @@index([name])
+  @@index([lastViewed])
+  @@index([source])
+}
+
+// Menu model - collections of recipes
+model Menu {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  recipeIds String[] @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
