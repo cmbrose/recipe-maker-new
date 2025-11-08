@@ -22,10 +22,12 @@ export default function RecipesPage() {
   useEffect(() => {
     const tagsFromUrl = parseTagsFromUrl(searchParams);
     const searchFromUrl = searchParams.get('search');
+    const sortFromUrl = searchParams.get('sort') as RecipeFilters['sort'];
 
     setFilters({
       tags: tagsFromUrl.length > 0 ? tagsFromUrl : undefined,
       search: searchFromUrl || undefined,
+      sort: sortFromUrl || undefined,
     });
   }, [searchParams]);
 
@@ -39,6 +41,9 @@ export default function RecipesPage() {
     }
     if (newFilters.tags && newFilters.tags.length > 0) {
       newFilters.tags.forEach(tag => params.append('tags', tag));
+    }
+    if (newFilters.sort) {
+      params.set('sort', newFilters.sort);
     }
 
     const newUrl = params.toString()
