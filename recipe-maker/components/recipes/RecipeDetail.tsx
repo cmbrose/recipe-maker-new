@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getTagFilterUrl } from '@/lib/utils/tag-url';
 
 interface RecipeDetailProps {
   id: string;
@@ -40,117 +41,128 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">{recipe.name}</h1>
-          <div className="flex gap-4 text-sm text-muted-foreground">
-            {recipe.prepTime && <span>Prep: {recipe.prepTime} min</span>}
-            {recipe.cookTime && <span>Cook: {recipe.cookTime} min</span>}
-            {recipe.totalTime && <span>Total: {recipe.totalTime} min</span>}
-            {recipe.servings && <span>Servings: {recipe.servings}</span>}
-          </div>
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Title */}
+      <h1 className="text-4xl font-bold tracking-tight">{recipe.name}</h1>
+
+      {/* Tags and Edit Button Row */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex gap-2 flex-wrap">
+          {recipe.tags && recipe.tags.length > 0 ? (
+            recipe.tags.map((tag) => (
+              <Badge key={tag} className="hover:bg-primary/80 cursor-pointer" asChild>
+                <Link href={getTagFilterUrl(tag)}>
+                  {tag}
+                </Link>
+              </Badge>
+            ))
+          ) : (
+            <span className="text-sm text-muted-foreground">No tags</span>
+          )}
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link href={`/recipes/${id}/edit`}>Edit</Link>
-          </Button>
+        <Button asChild variant="outline">
+          <Link href={`/recipes/${id}/edit`}>Edit</Link>
+        </Button>
+      </div>
+
+      {/* Two Column Layout - 5/12 and 7/12 split */}
+      <div className="grid gap-6 md:grid-cols-12">
+        {/* Left Column: Ingredients (5/12) */}
+        <div className="md:col-span-5 space-y-6">
+          {/* Preview Image (only above ingredients) */}
+          {recipe.previewUrl && (
+            <img
+              src={recipe.previewUrl}
+              alt={recipe.name}
+              className="w-full h-auto rounded-lg mb-4"
+            />
+          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Ingredients</CardTitle>
+              {recipe.servings && (
+                <p className="text-sm text-muted-foreground">
+                  Servings: {recipe.servings}
+                </p>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {recipe.ingredients.map((group, idx) => (
+                <div key={idx}>
+                  {group.name && (
+                    <h3 className="font-semibold mb-2">{group.name}</h3>
+                  )}
+                  <ul className="space-y-1">
+                    {group.items.map((item, itemIdx) => (
+                      <li key={itemIdx} className="text-sm">
+                        • {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column: Directions and Notes (7/12) */}
+        <div className="md:col-span-7 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Directions</CardTitle>
+              <div className="flex gap-4 text-sm text-muted-foreground">
+                {recipe.prepTime && <span>Prep: {recipe.prepTime} min</span>}
+                {recipe.cookTime && <span>Cook: {recipe.cookTime} min</span>}
+                {recipe.totalTime && <span>Total: {recipe.totalTime} min</span>}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ol className="space-y-3">
+                {recipe.directions.map((direction, idx) => (
+                  <li key={idx} className="text-sm">
+                    <span className="font-semibold">{idx + 1}. </span>
+                    {direction}
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+
+          {recipe.notes && recipe.notes.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {recipe.notes.map((note, idx) => (
+                    <li key={idx} className="text-sm">
+                      • {note}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
-      {recipe.tags && recipe.tags.length > 0 && (
-        <div className="flex gap-2 flex-wrap">
-          {recipe.tags.map((tag) => (
-            <Badge key={tag}>{tag}</Badge>
-          ))}
-        </div>
-      )}
-
+      {/* Source URL at bottom */}
       {recipe.source && (
-        <div className="text-sm">
-          <span className="text-muted-foreground">Source: </span>
+        <div className="text-xs italic text-muted-foreground/60 pt-4">
           {recipe.sourceKind === 'url' ? (
             <a
               href={recipe.source}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="hover:text-muted-foreground/80"
             >
-              {recipe.source}
+              Source: {recipe.source}
             </a>
           ) : (
-            <span>{recipe.source}</span>
+            <span>Source: {recipe.source}</span>
           )}
         </div>
-      )}
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Ingredients</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {recipe.ingredients.map((group, idx) => (
-              <div key={idx}>
-                {group.name && (
-                  <h3 className="font-semibold mb-2">{group.name}</h3>
-                )}
-                <ul className="space-y-1">
-                  {group.items.map((item, itemIdx) => (
-                    <li key={itemIdx} className="text-sm">
-                      • {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Directions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ol className="space-y-3">
-              {recipe.directions.map((direction, idx) => (
-                <li key={idx} className="text-sm">
-                  <span className="font-semibold">{idx + 1}. </span>
-                  {direction}
-                </li>
-              ))}
-            </ol>
-          </CardContent>
-        </Card>
-      </div>
-
-      {recipe.previewUrl && (
-        <Card>
-          <CardContent className="p-0">
-            <img
-              src={recipe.previewUrl}
-              alt={recipe.name}
-              className="w-full h-auto rounded-lg"
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {recipe.notes && recipe.notes.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {recipe.notes.map((note, idx) => (
-                <li key={idx} className="text-sm">
-                  {note}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
       )}
     </div>
   );

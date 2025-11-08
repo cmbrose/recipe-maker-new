@@ -38,14 +38,6 @@ export function MainNav() {
             ))}
           </nav>
         </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/recipes/new">New Recipe</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/recipes/new/from-url">Import from URL</Link>
-          </Button>
-        </div>
       </div>
     </header>
   );

@@ -1,17 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { RecipeList } from '@/components/recipes/RecipeList';
 import { RecipeSearch } from '@/components/recipes/RecipeSearch';
 import { useRecipes } from '@/lib/hooks/useRecipes';
 import { Button } from '@/components/ui/button';
 import { Plus, Link as LinkIcon } from 'lucide-react';
+import { parseTagsFromUrl } from '@/lib/utils/tag-url';
 import type { RecipeFilters } from '@/types/recipe';
 
 export default function RecipesPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [filters, setFilters] = useState<RecipeFilters>({});
   const { data, isLoading, error } = useRecipes(filters);
+
+  // Parse URL parameters and set initial filters
+  useEffect(() => {
+    const tagsFromUrl = parseTagsFromUrl(searchParams);
+    const searchFromUrl = searchParams.get('search');
+
+    setFilters({
+      tags: tagsFromUrl.length > 0 ? tagsFromUrl : undefined,
+      search: searchFromUrl || undefined,
+    });
+  }, [searchParams]);
+
+  // Update URL when filters change
+  const handleFiltersChange = (newFilters: RecipeFilters) => {
+    setFilters(newFilters);
+
+    const params = new URLSearchParams();
+    if (newFilters.search) {
+      params.set('search', newFilters.search);
+    }
+    if (newFilters.tags && newFilters.tags.length > 0) {
+      newFilters.tags.forEach(tag => params.append('tags', tag));
+    }
+
+    const newUrl = params.toString()
+      ? `${pathname}?${params.toString()}`
+      : pathname;
+
+    router.push(newUrl, { scroll: false });
+  };
 
   return (
     <div className="space-y-6">
@@ -38,7 +73,7 @@ export default function RecipesPage() {
         </div>
       </div>
 
-      <RecipeSearch filters={filters} onFiltersChange={setFilters} />
+      <RecipeSearch filters={filters} onFiltersChange={handleFiltersChange} />
 
       {error && (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
