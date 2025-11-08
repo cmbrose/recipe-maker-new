@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { recipeApi } from '@/lib/api/client';
-import type { Recipe, RecipeFilters } from '@/types/recipe';
+import type { Recipe, RecipeFilters, CreateRecipeInput } from '@/types/recipe';
 
 // Query keys
 export const recipeKeys = {
@@ -32,7 +32,7 @@ export function useCreateRecipe() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Partial<Recipe>) => recipeApi.create(data),
+    mutationFn: (data: CreateRecipeInput) => recipeApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: recipeKeys.lists() });
     },

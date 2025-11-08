@@ -53,7 +53,7 @@ export function RecipeSearch({ filters, onFiltersChange }: RecipeSearchProps) {
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const sort = e.target.value === 'none' ? undefined : e.target.value as RecipeFilters['sort'];
+    const sort = e.target.value as RecipeFilters['sort'];
     onFiltersChange({
       ...filters,
       sort
@@ -61,13 +61,15 @@ export function RecipeSearch({ filters, onFiltersChange }: RecipeSearchProps) {
   };
 
   const clearAllFilters = () => {
-    onFiltersChange({});
+    onFiltersChange({
+      sort: 'viewed-desc' // Reset to default sort
+    });
     setNewTag('');
   };
 
   const hasFilters = filters.search ||
     (filters.tags && filters.tags.length > 0) ||
-    filters.sort;
+    (filters.sort && filters.sort !== 'viewed-desc');
 
   return (
     <div className="flex gap-3 items-center flex-wrap">
@@ -118,16 +120,15 @@ export function RecipeSearch({ filters, onFiltersChange }: RecipeSearchProps) {
       <div className="relative min-w-[180px]">
         <ArrowUpDown className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
         <select
-          value={filters.sort || 'none'}
+          value={filters.sort || 'viewed-desc'}
           onChange={handleSortChange}
           className="w-full h-10 pl-10 pr-4 py-2 border border-input bg-background rounded-md text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 appearance-none"
         >
-          <option value="none">Default order</option>
+          <option value="viewed-desc">Recently viewed</option>
           <option value="name-asc">Name A-Z</option>
           <option value="name-desc">Name Z-A</option>
           <option value="created-desc">Newest first</option>
           <option value="created-asc">Oldest first</option>
-          <option value="viewed-desc">Recently viewed</option>
           <option value="viewed-asc">Least recently viewed</option>
         </select>
       </div>

@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { RecipeList } from '@/components/recipes/RecipeList';
 import { RecipeSearch } from '@/components/recipes/RecipeSearch';
-import { useRecipes } from '@/lib/hooks/useRecipes';
+import { useRecipes, recipeKeys } from '@/lib/hooks/useRecipes';
 import { Button } from '@/components/ui/button';
 import { Plus, Link as LinkIcon } from 'lucide-react';
 import { parseTagsFromUrl } from '@/lib/utils/tag-url';
@@ -15,8 +16,14 @@ export default function RecipesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<RecipeFilters>({});
   const { data, isLoading, error } = useRecipes(filters);
+
+  // Invalidate recipe lists cache when component mounts to ensure fresh data
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: recipeKeys.lists() });
+  }, [queryClient]);
 
   // Parse URL parameters and set initial filters
   useEffect(() => {
@@ -27,7 +34,7 @@ export default function RecipesPage() {
     setFilters({
       tags: tagsFromUrl.length > 0 ? tagsFromUrl : undefined,
       search: searchFromUrl || undefined,
-      sort: sortFromUrl || undefined,
+      sort: sortFromUrl || 'viewed-desc', // Default to recently viewed
     });
   }, [searchParams]);
 
@@ -42,7 +49,7 @@ export default function RecipesPage() {
     if (newFilters.tags && newFilters.tags.length > 0) {
       newFilters.tags.forEach(tag => params.append('tags', tag));
     }
-    if (newFilters.sort) {
+    if (newFilters.sort && newFilters.sort !== 'viewed-desc') {
       params.set('sort', newFilters.sort);
     }
 

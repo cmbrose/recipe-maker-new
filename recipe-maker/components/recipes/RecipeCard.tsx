@@ -36,8 +36,8 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
                 <CardContent>
                     <div className="flex gap-1 flex-wrap">
                         {recipe.tags.slice(0, 3).map((tag) => (
-                            <ClickableTag 
-                                key={tag} 
+                            <ClickableTag
+                                key={tag}
                                 tag={tag}
                                 onClick={(e) => e.stopPropagation()}
                             />
