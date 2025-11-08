@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray, Controller, useWatch, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,9 +29,57 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { Recipe } from '@/types/recipe';
 
+// Generic auto-expanding field array hook
+function useAutoExpandingFieldArray<T>({
+    control,
+    name,
+    newItemValue,
+    isEmpty,
+}: {
+    control: Control<RecipeFormValues>;
+    name: any;
+    newItemValue: T;
+    isEmpty: (item: T) => boolean;
+}) {
+    const { fields, append, remove } = useFieldArray({ control, name });
+    const items = useWatch({ control, name }) || [];
+    const inputRefs = useRef<(HTMLInputElement | HTMLTextAreaElement | null)[]>([]);
+
+    useEffect(() => {
+        // Ensure at least one field exists
+        if (fields.length === 0) {
+            append(newItemValue);
+            return;
+        }
+
+        // Don't do anything if items hasn't caught up with fields yet
+        if (items.length === 0 && fields.length > 0) {
+            return;
+        }
+
+        // Auto-expand when last item has content
+        const lastItem = items[items.length - 1];
+        if (lastItem !== undefined && !isEmpty(lastItem)) {
+            const activeElement = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
+            const wasFieldFocused = inputRefs.current.includes(activeElement);
+
+            append(newItemValue);
+
+            if (wasFieldFocused) {
+                requestAnimationFrame(() => {
+                    activeElement?.focus();
+                });
+            }
+        }
+    }, [items, fields.length, append, newItemValue, isEmpty]);
+
+    return { fields, remove, inputRefs };
+}
+
 // Validation schema
 // Note: Using unions with empty strings to support HTML input behavior
 // The form handles conversion to proper types on submit
+// Arrays allow empty strings for auto-expanding UX; empty items are filtered before save
 const recipeSchema = z.object({
     name: z.string().min(1, 'Recipe name is required').max(200, 'Name is too long'),
     prepTime: z.union([z.number().int().min(0), z.literal('')]).optional(),
@@ -45,15 +93,10 @@ const recipeSchema = z.object({
     ingredientGroups: z.array(
         z.object({
             name: z.string().optional(),
-            items: z.array(z.string().min(1, 'Ingredient cannot be empty')),
+            items: z.array(z.string()),
         })
     ).min(1, 'At least one ingredient group is required'),
-    directions: z.array(
-        z.object({
-            step: z.number(),
-            text: z.string().min(1, 'Direction cannot be empty'),
-        })
-    ).min(1, 'At least one direction is required'),
+    directions: z.array(z.string()).min(1, 'At least one direction is required'),
 });
 
 export type RecipeFormValues = z.infer<typeof recipeSchema>;
@@ -65,32 +108,31 @@ interface RecipeEditorProps {
     isLoading?: boolean;
 }
 
-// Separate component for ingredient items to avoid React Compiler warnings
-function IngredientItems({
-    control,
-    groupIndex
-}: {
-    control: Control<RecipeFormValues>;
-    groupIndex: number;
-}) {
-    const { fields: itemFields, remove: removeItem, append: appendItem } = useFieldArray({
+// Separate component for ingredient items to avoid Rules of Hooks violation
+function IngredientGroupItems({ control, groupIndex }: { control: Control<RecipeFormValues>; groupIndex: number }) {
+    const { fields, remove, inputRefs } = useAutoExpandingFieldArray({
         control,
-        name: 'ingredientGroups',
+        name: `ingredientGroups.${groupIndex}.items` as any,
+        newItemValue: '',
+        isEmpty: (item: string) => item.trim() === '',
     });
 
     return (
         <>
-            {itemFields.map((item, itemIndex) => (
+            {fields.map((item, itemIndex) => (
                 <div key={item.id} className="flex items-center gap-2">
                     <Controller
                         control={control}
-                        name={`ingredientGroups.${groupIndex}.items.${itemIndex}`}
+                        name={`ingredientGroups.${groupIndex}.items.${itemIndex}` as any}
                         render={({ field }) => (
                             <Input
                                 placeholder="e.g., 2 cups flour"
                                 value={field.value || ''}
                                 onChange={field.onChange}
                                 className="flex-1"
+                                ref={(el) => {
+                                    inputRefs.current[itemIndex] = el;
+                                }}
                             />
                         )}
                     />
@@ -98,34 +140,19 @@ function IngredientItems({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                            if (itemFields.length > 1) {
-                                removeItem(itemIndex);
-                            }
-                        }}
-                        disabled={itemFields.length === 1}
+                        onClick={() => remove(itemIndex)}
+                        className="shrink-0"
                     >
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
             ))}
-
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => appendItem({ items: [] })}
-            >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Ingredient
-            </Button>
         </>
     );
 }
 
 export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEditorProps) {
     const [tagInput, setTagInput] = useState('');
-    const [noteInput, setNoteInput] = useState('');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     // Initialize form with existing recipe data or defaults
@@ -145,12 +172,8 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                 source: recipe.source || '',
                 tags: recipe.tags || [],
                 notes: recipe.notes || [],
-                ingredientGroups: recipe.ingredients.length > 0
-                    ? recipe.ingredients
-                    : [{ name: '', items: [''] }],
-                directions: recipe.directions.length > 0
-                    ? recipe.directions
-                    : [{ step: 1, text: '' }],
+                ingredientGroups: recipe.ingredients || [],
+                directions: recipe.directions || [],
             }
             : {
                 name: '',
@@ -162,8 +185,8 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                 source: '',
                 tags: [],
                 notes: [],
-                ingredientGroups: [{ name: '', items: [''] }],
-                directions: [{ step: 1, text: '' }],
+                ingredientGroups: [{ name: '', items: [] }],
+                directions: [],
             },
     });
 
@@ -174,15 +197,24 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
 
     // Use useWatch to avoid React Compiler warnings
     const tags = useWatch({ control: form.control, name: 'tags' }) || [];
-    const notes = useWatch({ control: form.control, name: 'notes' }) || [];
 
-    const { fields: directionFields, append: appendDirection, remove: removeDirection } = useFieldArray({
+    const { fields: directionFields, remove: removeDirection, inputRefs: directionInputRefs } = useAutoExpandingFieldArray({
         control: form.control,
         name: 'directions',
+        newItemValue: '',
+        isEmpty: (item: string) => item.trim() === '',
+    });
+
+    const { fields: noteFields, remove: removeNote, inputRefs: noteInputRefs } = useAutoExpandingFieldArray({
+        control: form.control,
+        name: 'notes',
+        newItemValue: '',
+        isEmpty: (item: string) => item.trim() === '',
     });
 
     const handleSubmit = async (data: RecipeFormValues) => {
         // Convert empty strings to undefined for optional numeric fields
+        // Filter out empty items from arrays
         const cleanData = {
             ...data,
             prepTime: data.prepTime === '' ? undefined : Number(data.prepTime),
@@ -191,6 +223,14 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
             servings: data.servings === '' ? undefined : Number(data.servings),
             previewUrl: data.previewUrl === '' ? undefined : data.previewUrl,
             source: data.source === '' ? undefined : data.source,
+            ingredientGroups: data.ingredientGroups
+                .map(group => ({
+                    ...group,
+                    items: group.items.filter(item => item.trim() !== ''),
+                }))
+                .filter(group => group.items.length > 0),
+            directions: data.directions.filter(dir => dir.trim() !== ''),
+            notes: data.notes.filter(note => note.trim() !== ''),
         };
         await onSave(cleanData);
     };
@@ -208,18 +248,7 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
         form.setValue('tags', tags.filter((_, i) => i !== index));
     };
 
-    const addNote = () => {
-        const trimmed = noteInput.trim();
-        if (trimmed) {
-            form.setValue('notes', [...form.getValues('notes'), trimmed]);
-            setNoteInput('');
-        }
-    };
 
-    const removeNote = (index: number) => {
-        const notes = form.getValues('notes');
-        form.setValue('notes', notes.filter((_, i) => i !== index));
-    };
 
     return (
         <>
@@ -374,67 +403,49 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                                     )}
                                 </div>
 
-                                <IngredientItems
-                                    control={form.control}
-                                    groupIndex={groupIndex}
-                                />
+                                <IngredientGroupItems control={form.control} groupIndex={groupIndex} />
                             </div>
                         ))}
                     </div>
 
                     {/* Directions */}
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-2xl font-bold">Directions</h2>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => appendDirection({ step: directionFields.length + 1, text: '' })}
-                            >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Step
-                            </Button>
-                        </div>
+                        <h2 className="text-2xl font-bold">Directions</h2>
 
                         {directionFields.map((direction, index) => (
-                            <FormField
-                                key={direction.id}
-                                control={form.control}
-                                name={`directions.${index}.text`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Step {index + 1}</FormLabel>
-                                        <div className="flex gap-2">
-                                            <FormControl>
-                                                <Textarea
-                                                    placeholder="Describe this step..."
-                                                    className="flex-1"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            {directionFields.length > 1 && (
+                            <div key={direction.id} className="space-y-2">
+                                <FormField
+                                    control={form.control}
+                                    name={`directions.${index}` as any}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Step {index + 1}</FormLabel>
+                                            <div className="flex gap-2">
+                                                <FormControl>
+                                                    <Textarea
+                                                        placeholder="Describe this step..."
+                                                        className="flex-1"
+                                                        {...field}
+                                                        ref={(el) => {
+                                                            directionInputRefs.current[index] = el;
+                                                        }}
+                                                    />
+                                                </FormControl>
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => {
-                                                        removeDirection(index);
-                                                        // Renumber remaining directions
-                                                        const directions = form.getValues('directions');
-                                                        directions.forEach((dir, i) => {
-                                                            form.setValue(`directions.${i}.step`, i + 1);
-                                                        });
-                                                    }}
+                                                    onClick={() => removeDirection(index)}
+                                                    className="shrink-0"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <X className="h-4 w-4" />
                                                 </Button>
-                                            )}
-                                        </div>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                                            </div>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
                         ))}
                     </div>
 
@@ -481,38 +492,36 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                     {/* Notes */}
                     <div className="space-y-4">
                         <h2 className="text-2xl font-bold">Notes</h2>
-                        <div className="flex gap-2">
-                            <Input
-                                placeholder="Add a note"
-                                value={noteInput}
-                                onChange={(e) => setNoteInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        addNote();
-                                    }
-                                }}
-                            />
-                            <Button type="button" onClick={addNote} variant="outline">
-                                Add
-                            </Button>
-                        </div>
-                        {notes.length > 0 && (
-                            <ul className="space-y-2">
-                                {notes.map((note, index) => (
-                                    <li key={index} className="flex items-start gap-2 p-2 bg-muted rounded">
-                                        <span className="flex-1">{note}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeNote(index)}
-                                            className="text-muted-foreground hover:text-foreground"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
+                        {noteFields.map((note, index) => (
+                            <div key={note.id} className="flex items-center gap-2">
+                                <FormField
+                                    control={form.control}
+                                    name={`notes.${index}` as any}
+                                    render={({ field }) => (
+                                        <FormItem className="flex-1">
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Add a note..."
+                                                    {...field}
+                                                    ref={(el) => {
+                                                        noteInputRefs.current[index] = el;
+                                                    }}
+                                                />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeNote(index)}
+                                    className="shrink-0"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
                     </div>
 
                     {/* Actions */}

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecipeEditor, type RecipeFormValues } from '@/components/recipes/RecipeEditor';
 import { recipeApi } from '@/lib/api/client';
-import type { IngredientGroup, Direction } from '@/types/recipe';
+import type { IngredientGroup } from '@/types/recipe';
 import { toast } from 'sonner';
 
 export default function NewRecipePage() {
@@ -21,7 +21,7 @@ export default function NewRecipePage() {
                 totalTime: data.totalTime || undefined,
                 servings: data.servings || undefined,
                 ingredients: data.ingredientGroups as IngredientGroup[],
-                directions: data.directions as Direction[],
+                directions: data.directions,
                 previewUrl: data.previewUrl || undefined,
                 source: data.source || undefined,
                 sourceKind: 'manual' as const,

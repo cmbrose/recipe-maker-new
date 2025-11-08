@@ -1,6 +1,6 @@
 // API client for fetching data from the backend
 
-import type { Recipe, RecipeFilters } from '@/types/recipe';
+import type { Recipe, RecipeFilters, CreateRecipeInput, UpdateRecipeInput } from '@/types/recipe';
 import type { Menu } from '@/types/menu';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
@@ -30,8 +30,7 @@ export const recipeApi = {
     const params = new URLSearchParams();
     if (filters?.search) params.append('search', filters.search);
     if (filters?.tags) params.append('tags', filters.tags.join(','));
-    if (filters?.sortBy) params.append('sortBy', filters.sortBy);
-    if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+    if (filters?.sort) params.append('sort', filters.sort);
 
     const query = params.toString();
     return fetchAPI<{ recipes: Recipe[]; total: number }>(
@@ -43,14 +42,14 @@ export const recipeApi = {
     return fetchAPI<Recipe>(`/api/recipes/${id}`);
   },
 
-  create: async (data: Partial<Recipe>) => {
+  create: async (data: CreateRecipeInput) => {
     return fetchAPI<Recipe>(`/api/recipes`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  update: async (id: string, data: Partial<Recipe>) => {
+  update: async (id: string, data: Omit<Partial<UpdateRecipeInput>, 'id'>) => {
     return fetchAPI<Recipe>(`/api/recipes/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),

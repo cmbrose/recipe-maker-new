@@ -11,14 +11,6 @@ export const IngredientGroupSchema = z.object({
 });
 
 /**
- * Direction schema
- */
-export const DirectionSchema = z.object({
-  step: z.number().int().positive(),
-  text: z.string().min(1),
-});
-
-/**
  * Recipe creation schema
  */
 export const CreateRecipeSchema = z.object({
@@ -28,9 +20,9 @@ export const CreateRecipeSchema = z.object({
   totalTime: z.number().int().positive().optional(),
   servings: z.number().int().positive().optional(),
   ingredients: z.array(IngredientGroupSchema).min(1, 'At least one ingredient group is required'),
-  directions: z.array(DirectionSchema).min(1, 'At least one direction is required'),
-  previewUrl: z.string().url().optional().or(z.literal('')),
-  source: z.string().url().optional().or(z.literal('')),
+  directions: z.array(z.string().min(1)).min(1, 'At least one direction is required'),
+  previewUrl: z.url().optional().or(z.literal('')),
+  source: z.url().optional().or(z.literal('')),
   sourceKind: z.enum(['url', 'manual']),
   tags: z.array(z.string()).optional(),
   notes: z.array(z.string()).optional(),
@@ -47,9 +39,9 @@ export const UpdateRecipeSchema = z.object({
   totalTime: z.number().int().positive().optional(),
   servings: z.number().int().positive().optional(),
   ingredients: z.array(IngredientGroupSchema).optional(),
-  directions: z.array(DirectionSchema).optional(),
-  previewUrl: z.string().url().optional().or(z.literal('')),
-  source: z.string().url().optional().or(z.literal('')),
+  directions: z.array(z.string().min(1)).optional(),
+  previewUrl: z.url().optional().or(z.literal('')),
+  source: z.url().optional().or(z.literal('')),
   sourceKind: z.enum(['url', 'manual']).optional(),
   tags: z.array(z.string()).optional(),
   notes: z.array(z.string()).optional(),
@@ -118,18 +110,4 @@ export function safeValidate<T>(
   }
 
   return { success: false, error: result.error };
-}
-
-/**
- * Format Zod errors for display
- */
-export function formatZodError(error: z.ZodError): Record<string, string> {
-  const formatted: Record<string, string> = {};
-
-  error.errors.forEach((err) => {
-    const path = err.path.join('.');
-    formatted[path] = err.message;
-  });
-
-  return formatted;
 }

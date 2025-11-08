@@ -10,14 +10,6 @@ export interface IngredientGroup {
 }
 
 /**
- * Direction/step in the recipe
- */
-export interface Direction {
-  step: number;
-  text: string;
-}
-
-/**
  * Source kind for recipe creation
  */
 export type SourceKind = 'url' | 'manual';
@@ -33,7 +25,7 @@ export interface Recipe {
   totalTime?: number;       // minutes
   servings?: number;
   ingredients: IngredientGroup[];
-  directions: Direction[];
+  directions: string[];
   previewUrl?: string;
   source?: string;          // Original URL
   sourceKind: SourceKind;
@@ -54,7 +46,7 @@ export interface CreateRecipeInput {
   totalTime?: number;
   servings?: number;
   ingredients: IngredientGroup[];
-  directions: Direction[];
+  directions: string[];
   previewUrl?: string;
   source?: string;
   sourceKind: SourceKind;
@@ -73,7 +65,7 @@ export interface UpdateRecipeInput {
   totalTime?: number;
   servings?: number;
   ingredients?: IngredientGroup[];
-  directions?: Direction[];
+  directions?: string[];
   previewUrl?: string;
   source?: string;
   sourceKind?: SourceKind;

@@ -9,7 +9,6 @@ import type {
   RecipeFilters,
   RecipeListResult,
   IngredientGroup,
-  Direction,
 } from '@/types/recipe';
 
 /**
@@ -34,7 +33,7 @@ function toRecipe(dbRecipe: PrismaRecipe): Recipe {
     servings: dbRecipe.servings ?? undefined,
     // Safe cast: we control all writes and ensure correct structure
     ingredients: dbRecipe.ingredients as unknown as IngredientGroup[],
-    directions: dbRecipe.directions as unknown as Direction[],
+    directions: dbRecipe.directions,
     previewUrl: dbRecipe.previewUrl ?? undefined,
     source: dbRecipe.source ?? undefined,
     sourceKind: dbRecipe.sourceKind as 'url' | 'manual',
@@ -169,7 +168,7 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
       totalTime: input.totalTime,
       servings: input.servings,
       ingredients: input.ingredients as unknown as Prisma.InputJsonValue,
-      directions: input.directions as unknown as Prisma.InputJsonValue,
+      directions: input.directions || [],
       previewUrl: input.previewUrl,
       source: input.source,
       sourceKind: input.sourceKind,
@@ -193,7 +192,7 @@ export async function updateRecipe(input: UpdateRecipeInput): Promise<Recipe> {
     const value = (data as Record<string, unknown>)[key];
     if (value !== undefined) {
       // Handle Json fields that need special casting
-      if (key === 'ingredients' || key === 'directions') {
+      if (key === 'ingredients') {
         (updateData as Record<string, unknown>)[key] = value as unknown as Prisma.InputJsonValue;
       } else {
         (updateData as Record<string, unknown>)[key] = value;

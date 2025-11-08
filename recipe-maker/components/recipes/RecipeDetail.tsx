@@ -113,10 +113,10 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
           </CardHeader>
           <CardContent>
             <ol className="space-y-3">
-              {recipe.directions.map((direction) => (
-                <li key={direction.step} className="text-sm">
-                  <span className="font-semibold">{direction.step}. </span>
-                  {direction.text}
+              {recipe.directions.map((direction, idx) => (
+                <li key={idx} className="text-sm">
+                  <span className="font-semibold">{idx + 1}. </span>
+                  {direction}
                 </li>
               ))}
             </ol>
