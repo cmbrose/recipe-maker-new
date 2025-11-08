@@ -124,7 +124,7 @@ function extractIngredients(
 function extractDirections(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ step: number; text: string }> {
+): string[] {
   const steps: string[] = [];
 
   const list = root.find('.tasty-recipes-instructions-body ol').first();

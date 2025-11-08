@@ -177,7 +177,7 @@ function extractIngredients(
 function extractDirections(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ step: number; text: string }> {
+): string[] {
   const steps: string[] = [];
 
   // Try both ol and ul

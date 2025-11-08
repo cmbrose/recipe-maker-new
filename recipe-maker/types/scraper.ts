@@ -1,6 +1,6 @@
 // Recipe scraper type definitions
 
-import { IngredientGroup, Direction } from './recipe';
+import { IngredientGroup } from './recipe';
 
 /**
  * Result from scraping a recipe URL
@@ -12,7 +12,7 @@ export interface RecipeScraperResult {
   totalTime?: number;
   servings?: number;
   ingredients: IngredientGroup[];
-  directions: Direction[];
+  directions: string[];
   previewUrl?: string;
 }
 

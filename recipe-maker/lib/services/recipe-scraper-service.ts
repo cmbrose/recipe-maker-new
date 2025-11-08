@@ -32,7 +32,7 @@ export async function createRecipeFromUrl(url: string): Promise<Recipe> {
     const html = await fetchHtml(normalizedUrl);
 
     // Parse recipe
-    const scraped = await scraper.parser(html, normalizedUrl);
+    const scraped = await scraper.parser(html);
 
     // Validate required fields
     if (!scraped.name) {

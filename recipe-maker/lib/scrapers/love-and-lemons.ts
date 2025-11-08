@@ -270,7 +270,7 @@ function extractIngredientsType2(
 function extractDirectionsType1(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ step: number; text: string }> {
+): string[] {
   const steps: string[] = [];
 
   // Try both ol and ul
@@ -313,7 +313,7 @@ function extractDirectionsType1(
 function extractDirectionsType2(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ step: number; text: string }> {
+): string[] {
   const steps: string[] = [];
 
   const list = root.find('.ERSInstructions ol').first();

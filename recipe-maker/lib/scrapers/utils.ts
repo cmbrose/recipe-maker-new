@@ -2,7 +2,7 @@
 
 import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
-import type { IngredientGroup, Direction } from '@/types/recipe';
+import type { IngredientGroup } from '@/types/recipe';
 
 /**
  * Parse time string to minutes
@@ -107,11 +107,8 @@ export function groupIngredients(items: string[]): IngredientGroup[] {
 /**
  * Create directions from list of strings
  */
-export function createDirections(steps: string[]): Direction[] {
-  return steps.map((text, index) => ({
-    step: index + 1,
-    text: cleanText(text),
-  }));
+export function createDirections(steps: string[]): string[] {
+  return steps.map((text) => cleanText(text)).filter(Boolean);
 }
 
 /**

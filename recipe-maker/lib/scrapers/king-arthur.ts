@@ -130,7 +130,7 @@ function extractIngredients(
 function extractDirections(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ step: number; text: string }> {
+): string[] {
   const steps: string[] = [];
 
   const list = root.find('.recipe__instructions .field--recipe-steps ol').first();
