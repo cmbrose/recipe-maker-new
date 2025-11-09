@@ -24,8 +24,7 @@ model Recipe {
   // MongoDB limitation: complex nested types must use Json
   // Runtime type: IngredientGroup[] (see types/recipe.ts)
   ingredients Json     
-  // Runtime type: Direction[] (see types/recipe.ts)
-  directions  Json
+  directions  String[]
   previewUrl  String?
   source      String?  // Original URL if scraped
   sourceKind  String   // 'url' | 'manual'

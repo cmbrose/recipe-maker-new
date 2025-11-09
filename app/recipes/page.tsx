@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ import { Plus, Link as LinkIcon } from 'lucide-react';
 import { parseTagsFromUrl } from '@/lib/utils/tag-url';
 import type { RecipeFilters } from '@/types/recipe';
 
-export default function RecipesPage() {
+function RecipesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -97,5 +97,22 @@ export default function RecipesPage() {
 
       <RecipeList recipes={data?.recipes || []} isLoading={isLoading} />
     </div>
+  );
+}
+
+export default function RecipesPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Recipes</h1>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <RecipesContent />
+    </Suspense>
   );
 }
