@@ -104,7 +104,7 @@ Creates and configures Azure Static Web App for hosting the Next.js application.
 
 #### 3. export-mysql-data.sh
 
-Exports recipes and menus from MySQL database to JSON files.
+Exports recipes and menus from MySQL database to JSON files using TypeScript/Prisma for reliable serialization.
 
 **Usage:**
 ```bash
@@ -113,40 +113,36 @@ Exports recipes and menus from MySQL database to JSON files.
 
 **Options:**
 - `--output-dir <path>` - Output directory for exported data (default: ./data-export)
-- `--host <hostname>` - MySQL host (default: localhost)
-- `--port <port>` - MySQL port (default: 3306)
-- `--database <name>` - MySQL database name (default: recipe_maker_production)
-- `--user <username>` - MySQL username (required)
-- `--password <password>` - MySQL password (required)
 - `--help` - Show help message
 
+**Environment Variables:**
+- `DATABASE_URL` - MySQL connection string (required)
+- `EXPORT_OUTPUT_DIR` - Alternative to --output-dir
+
 **What it does:**
-1. Connects to MySQL database
-2. Exports all recipes to `recipes.json`
-3. Exports all menus to `menus.json`
+1. Uses Prisma Client to connect to MySQL
+2. Exports all recipes to `recipes.json` (properly serialized)
+3. Exports all menus to `menus.json` (properly serialized)
 4. Creates `metadata.json` with export information
-5. Validates JSON output
+5. Handles complex data types (JSON arrays, special characters) correctly
 
 **Example:**
 ```bash
 # Basic export
-./scripts/export-mysql-data.sh \
-  --user myuser \
-  --password mypassword
+export DATABASE_URL='mysql://user:pass@host:3306/database'
+./scripts/export-mysql-data.sh
 
-# Custom configuration
-./scripts/export-mysql-data.sh \
-  --host my-mysql-server.com \
-  --database my_recipes \
-  --user myuser \
-  --password mypassword \
-  --output-dir ./backup
+# Custom output directory
+export DATABASE_URL='mysql://user:pass@recipes-dev.mysql.database.azure.com:3306/recipes'
+./scripts/export-mysql-data.sh --output-dir ./backup
 ```
 
 **Output:**
-- `<output-dir>/recipes.json` - All recipe data
-- `<output-dir>/menus.json` - All menu data
+- `<output-dir>/recipes.json` - All recipe data (valid JSON)
+- `<output-dir>/menus.json` - All menu data (valid JSON)
 - `<output-dir>/metadata.json` - Export metadata
+
+**Note:** This script uses TypeScript (`export-mysql-data.ts`) via `tsx` for reliable data serialization. The old bash/awk approach was too brittle for handling complex JSON data.
 
 #### 4. import-cosmos-data.sh
 

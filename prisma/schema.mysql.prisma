@@ -1,0 +1,43 @@
+// Prisma schema for MySQL export
+// This is used only for the export script to read from the old MySQL database
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client-mysql"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Recipe {
+  id          Int       @id @default(autoincrement())
+  name        String
+  prepTime    String?   @map("prep_time")
+  cookTime    String?   @map("cook_time")
+  totalTime   String?   @map("total_time")
+  servings    String?
+  ingredients String?
+  directions  String?
+  previewUrl  String?   @map("preview_url")
+  source      String?
+  sourceKind  String    @map("source_kind")
+  tags        String?
+  notes       String?
+  lastViewed  DateTime? @map("last_viewed")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("recipes")
+}
+
+model Menu {
+  id        Int      @id @default(autoincrement())
+  name      String
+  recipes   String?    @map("recipes")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("menus")
+}
