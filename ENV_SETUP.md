@@ -80,9 +80,6 @@ COSMOS_DB_CONNECTION_STRING="mongodb://localhost:27017/recipe-maker-dev"
 
 **Fix:**
 ```bash
-# Make sure you're in the recipe-maker directory
-cd recipe-maker
-
 # Create .env from example
 cp .env.example .env
 

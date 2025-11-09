@@ -45,19 +45,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd recipe-maker
           pnpm install --frozen-lockfile
 
       - name: Generate Prisma Client
         run: |
-          cd recipe-maker
           pnpm db:generate
         env:
           COSMOS_DB_CONNECTION_STRING: ${{ secrets.COSMOS_DB_CONNECTION_STRING }}
 
       - name: Build application
         run: |
-          cd recipe-maker
           pnpm build
         env:
           COSMOS_DB_CONNECTION_STRING: ${{ secrets.COSMOS_DB_CONNECTION_STRING }}

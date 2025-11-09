@@ -7,7 +7,7 @@ set -e
 
 # Default values
 INPUT_DIR="${IMPORT_INPUT_DIR:-./data-export}"
-PRISMA_DIR="${PRISMA_DIR:-./recipe-maker}"
+PRISMA_DIR="${PRISMA_DIR:-./}"
 DRY_RUN="${DRY_RUN:-false}"
 
 # Color codes for output
@@ -37,7 +37,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --input-dir <path>     Input directory with exported data (default: ./data-export)"
-      echo "  --prisma-dir <path>    Directory containing Prisma schema (default: ./recipe-maker)"
+      echo "  --prisma-dir <path>    Directory containing Prisma schema (default: .)"
       echo "  --dry-run              Validate data without importing"
       echo "  --help                 Show this help message"
       echo ""
