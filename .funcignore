@@ -1,0 +1,9 @@
+*.md
+.git/
+.github/
+.vscode/
+node_modules/.cache/
+.next/cache/
+data-export/
+recipe-maker-rails/
+scripts/
