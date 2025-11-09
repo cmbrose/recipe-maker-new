@@ -63,13 +63,10 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
-          output_location: ""
+          output_location: ".next"
           skip_app_build: true
-          skip_api_build: false
         env:
           COSMOS_DB_CONNECTION_STRING: ${{ secrets.COSMOS_DB_CONNECTION_STRING }}
-          # Explicitly tell Azure SWA to use Node 20
-          NODE_VERSION: "20"
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'

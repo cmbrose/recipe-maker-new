@@ -1,33 +1,5 @@
 {
     "platform": {
         "apiRuntime": "node:20"
-    },
-    "routes": [
-        {
-            "route": "/api/health",
-            "allowedRoles": [
-                "anonymous"
-            ]
-        },
-        {
-            "route": "/api/*",
-            "allowedRoles": [
-                "anonymous"
-            ]
-        }
-    ],
-    "navigationFallback": {
-        "rewrite": "/_not-found",
-        "exclude": [
-            "/_next/*",
-            "/api/*",
-            "/favicon.ico"
-        ]
-    },
-    "globalHeaders": {
-        "cache-control": "public, max-age=0, must-revalidate"
-    },
-    "mimeTypes": {
-        ".json": "application/json"
     }
 }
