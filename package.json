@@ -16,6 +16,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@azure/monitor-opentelemetry": "^1.14.0",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "6.19.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",

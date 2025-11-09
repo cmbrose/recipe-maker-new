@@ -3,6 +3,7 @@ set -e
 
 # Azure Static Web App Diagnostics Script
 # Retrieves logs and diagnostics information for troubleshooting deployment issues
+# Usage: ./diagnose-swa.sh [--deployment-id <id>] [--resource-group <rg>] [--app-name <name>]
 
 # Color codes
 RED='\033[0;31m'
@@ -15,6 +16,45 @@ NC='\033[0m'
 RESOURCE_GROUP="${RESOURCE_GROUP:-recipe-maker-rg}"
 APP_NAME="${APP_NAME:-recipe-maker-app}"
 SUBSCRIPTION_ID="${SUBSCRIPTION_ID}"
+DEPLOYMENT_ID=""
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --deployment-id)
+      DEPLOYMENT_ID="$2"
+      shift 2
+      ;;
+    --resource-group)
+      RESOURCE_GROUP="$2"
+      shift 2
+      ;;
+    --app-name)
+      APP_NAME="$2"
+      shift 2
+      ;;
+    --subscription)
+      SUBSCRIPTION_ID="$2"
+      shift 2
+      ;;
+    --help)
+      echo "Usage: $0 [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  --deployment-id <id>    Specific deployment ID to check"
+      echo "  --resource-group <rg>   Resource group name (default: recipe-maker-rg)"
+      echo "  --app-name <name>       Static Web App name (default: recipe-maker-app)"
+      echo "  --subscription <id>     Azure subscription ID"
+      echo "  --help                  Show this help message"
+      exit 0
+      ;;
+    *)
+      echo -e "${RED}Unknown option: $1${NC}"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
 
 echo -e "${GREEN}=== Azure Static Web App Diagnostics ===${NC}"
 echo ""
@@ -34,6 +74,9 @@ fi
 
 echo "Resource Group: $RESOURCE_GROUP"
 echo "App Name: $APP_NAME"
+if [ -n "$DEPLOYMENT_ID" ]; then
+    echo "Deployment ID: $DEPLOYMENT_ID"
+fi
 echo ""
 
 # Get app details
@@ -53,12 +96,30 @@ echo -e "${GREEN}✓ App URL: https://$APP_URL${NC}"
 echo ""
 
 # Get build/deployment history
-echo -e "${YELLOW}Fetching deployment history (last 5 builds)...${NC}"
-az staticwebapp show \
-    --name "$APP_NAME" \
-    --resource-group "$RESOURCE_GROUP" \
-    --query "buildProperties" \
-    --output table 2>/dev/null || echo "Build properties not available"
+echo -e "${YELLOW}Fetching deployment history...${NC}"
+
+if [ -n "$DEPLOYMENT_ID" ]; then
+    # Query specific deployment
+    echo "Checking deployment: $DEPLOYMENT_ID"
+    
+    # Get build details from GitHub Actions API (if available)
+    echo ""
+    echo -e "${YELLOW}Deployment details:${NC}"
+    echo "Deployment ID: $DEPLOYMENT_ID"
+    echo ""
+    echo "To view full deployment logs:"
+    echo "  1. Go to GitHub Actions: https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/actions"
+    echo "  2. Search for deployment ID: $DEPLOYMENT_ID"
+    echo ""
+else
+    # Show recent deployments
+    echo "Recent deployments (use --deployment-id to get details on a specific one):"
+    az staticwebapp show \
+        --name "$APP_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --query "buildProperties" \
+        --output table 2>/dev/null || echo "Build properties not available"
+fi
 echo ""
 
 # Get environment details
@@ -83,21 +144,31 @@ echo ""
 # Show how to access logs via Azure Portal
 echo -e "${GREEN}=== How to Access Logs ===${NC}"
 echo ""
+
+if [ -n "$DEPLOYMENT_ID" ]; then
+    echo "For deployment: $DEPLOYMENT_ID"
+    echo ""
+    echo "1. View GitHub Actions deployment logs:"
+    echo "   ${BLUE}https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/actions${NC}"
+    echo "   Search for: $DEPLOYMENT_ID"
+    echo ""
+    echo "2. Check Azure Portal deployment details:"
+    echo "   ${BLUE}https://portal.azure.com/#@/resource/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/staticSites/$APP_NAME/deployments${NC}"
+    echo ""
+fi
+
+echo "General debugging:"
+echo ""
 echo "1. Azure Portal - Log Stream:"
 echo "   ${BLUE}https://portal.azure.com/#@/resource/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/staticSites/$APP_NAME/logStream${NC}"
 echo ""
 echo "2. Azure Portal - Monitoring:"
 echo "   ${BLUE}https://portal.azure.com/#@/resource/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/staticSites/$APP_NAME/monitoring${NC}"
 echo ""
-echo "3. Check deployment logs in GitHub Actions"
-echo "   - Go to your GitHub repository"
-echo "   - Click 'Actions' tab"
-echo "   - Select the failed workflow run"
-echo ""
-echo "4. Test the health endpoint:"
+echo "3. Test the health endpoint:"
 echo "   ${BLUE}curl -v https://$APP_URL/api/health${NC}"
 echo ""
-echo "5. Enable Application Insights for better diagnostics:"
+echo "4. Enable Application Insights for better diagnostics:"
 echo "   ${BLUE}az staticwebapp appsettings set \\${NC}"
 echo "   ${BLUE}  --name $APP_NAME \\${NC}"
 echo "   ${BLUE}  --resource-group $RESOURCE_GROUP \\${NC}"
