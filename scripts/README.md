@@ -159,7 +159,7 @@ Imports recipes and menus from JSON files into Cosmos DB via Prisma.
 
 **Options:**
 - `--input-dir <path>` - Input directory with exported data (default: ./data-export)
-- `--prisma-dir <path>` - Directory containing Prisma schema (default: ./recipe-maker)
+- `--prisma-dir <path>` - Directory containing Prisma schema (default: .)
 - `--dry-run` - Validate data without importing
 - `--help` - Show help message
 
@@ -181,8 +181,7 @@ Imports recipes and menus from JSON files into Cosmos DB via Prisma.
 
 # Custom directories
 ./scripts/import-cosmos-data.sh \
-  --input-dir ./backup \
-  --prisma-dir ./recipe-maker
+  --input-dir ./backup
 ```
 
 **Requirements:**
@@ -236,7 +235,6 @@ The import script will:
 
 ```bash
 # Check the data in Cosmos DB
-cd recipe-maker
 pnpm db:studio
 
 # Test the application
@@ -255,7 +253,6 @@ Save the connection string output, then:
 
 ```bash
 # Set local environment variable
-cd recipe-maker
 echo 'COSMOS_DB_CONNECTION_STRING="<your-connection-string>"' >> .env
 
 # Initialize database schema
