@@ -1,6 +1,10 @@
-# Dockerfile for Next.js + Prisma + Cosmos DB + App Insights
+# Dockerfile for Next.js + MongoDB + Cosmos DB + App Insights
 FROM node:20-slim AS base
 WORKDIR /app
+
+# Build arg for connection string (needed during build for page data collection)
+ARG COSMOS_DB_CONNECTION_STRING
+ENV COSMOS_DB_CONNECTION_STRING=$COSMOS_DB_CONNECTION_STRING
 
 # Install dependencies
 COPY package.json pnpm-lock.yaml ./
@@ -8,7 +12,6 @@ RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # Copy source
 COPY . .
-
 
 # Build Next.js app
 RUN pnpm build
