@@ -160,23 +160,47 @@ export async function getRecipeByUrl(url: string): Promise<Recipe | null> {
  * Create a new recipe
  */
 export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
-  const recipe = await prisma.recipe.create({
-    data: {
-      name: input.name,
-      prepTime: input.prepTime ?? null,
-      cookTime: input.cookTime ?? null,
-      totalTime: input.totalTime ?? null,
-      servings: input.servings ?? null,
-      ingredients: input.ingredients as unknown as Prisma.InputJsonValue,
-      directions: input.directions || [],
-      previewUrl: input.previewUrl ?? null,
-      source: input.source ?? null,
-      sourceKind: input.sourceKind,
-      tags: input.tags || [],
-      notes: input.notes || [],
-      lastViewed: null,
-    },
+  // Sanitize optional string fields (convert empty strings to null)
+  const previewUrl = input.previewUrl && input.previewUrl.trim() !== '' ? input.previewUrl : null;
+  const source = input.source && input.source.trim() !== '' ? input.source : null;
+
+  // Use runCommandRaw to bypass Prisma's $$REMOVE issue with Cosmos DB
+  const now = new Date();
+  const document: Record<string, unknown> = {
+    name: input.name,
+    prepTime: input.prepTime ?? null,
+    cookTime: input.cookTime ?? null,
+    totalTime: input.totalTime ?? null,
+    servings: input.servings ?? null,
+    ingredients: input.ingredients as unknown as Prisma.InputJsonValue,
+    directions: input.directions || [],
+    previewUrl,
+    source,
+    sourceKind: input.sourceKind,
+    tags: input.tags || [],
+    notes: input.notes || [],
+    lastViewed: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const result = await prisma.$runCommandRaw({
+    insert: 'Recipe',
+    documents: [document as Prisma.InputJsonValue],
+  }) as { n: number; ok: number; insertedIds?: { '0': { $oid: string } } };
+
+  if (!result.ok || !result.insertedIds) {
+    throw new Error('Failed to create recipe');
+  }
+
+  // Fetch the created recipe
+  const recipe = await prisma.recipe.findUnique({
+    where: { id: result.insertedIds['0'].$oid },
   });
+
+  if (!recipe) {
+    throw new Error('Recipe created but not found');
+  }
 
   return toRecipe(recipe);
 }
@@ -187,7 +211,7 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
 export async function updateRecipe(input: UpdateRecipeInput): Promise<Recipe> {
   const { id, ...data } = input;
 
-  // Remove undefined fields
+  // Build update data, converting undefined to null (Cosmos DB requirement)
   const updateData: Prisma.RecipeUpdateInput = {};
   Object.keys(data).forEach((key) => {
     const value = (data as Record<string, unknown>)[key];
@@ -195,11 +219,25 @@ export async function updateRecipe(input: UpdateRecipeInput): Promise<Recipe> {
       // Handle Json fields that need special casting
       if (key === 'ingredients') {
         (updateData as Record<string, unknown>)[key] = value as unknown as Prisma.InputJsonValue;
-      } else {
+      } 
+      // Handle optional string fields (convert empty strings to null)
+      else if ((key === 'previewUrl' || key === 'source') && typeof value === 'string' && value.trim() === '') {
+        (updateData as Record<string, unknown>)[key] = null;
+      }
+      else {
         (updateData as Record<string, unknown>)[key] = value;
       }
     }
   });
+
+  // If updateData is empty, just fetch and return the recipe
+  if (Object.keys(updateData).length === 0) {
+    const recipe = await prisma.recipe.findUnique({ where: { id } });
+    if (!recipe) {
+      throw new Error(`Recipe not found: ${id}`);
+    }
+    return toRecipe(recipe);
+  }
 
   const recipe = await prisma.recipe.update({
     where: { id },
