@@ -64,10 +64,10 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             COSMOS_DB_CONNECTION_STRING=${{ steps.cosmos.outputs.connection-string }}
-          # Add directConnection=true to disable transactions (Cosmos DB requirement)
-          CONN="${CONN}&directConnection=true"
-          echo "::add-mask::$CONN"
-          echo "connection-string=$CONN" >> $GITHUB_OUTPUT
+            # Add directConnection=true to disable transactions (Cosmos DB requirement)
+            CONN="${CONN}&directConnection=true"
+            echo "::add-mask::$CONN"
+            echo "connection-string=$CONN" >> $GITHUB_OUTPUT
 
       - name: Get Application Insights connection string
         id: insights
