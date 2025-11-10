@@ -77,15 +77,15 @@ function useAutoExpandingFieldArray<T>({
 }
 
 // Validation schema
-// Note: Using unions with empty strings to support HTML input behavior
+// Note: HTML inputs return strings, so we coerce to numbers where needed
 // The form handles conversion to proper types on submit
 // Custom validation ensures filtered arrays are not empty
 const recipeSchema = z.object({
     name: z.string().min(1, 'Recipe name is required').max(200, 'Name is too long'),
-    prepTime: z.union([z.number().int().min(0), z.literal('')]).optional(),
-    cookTime: z.union([z.number().int().min(0), z.literal('')]).optional(),
-    totalTime: z.union([z.number().int().min(0), z.literal('')]).optional(),
-    servings: z.union([z.number().int().min(1), z.literal('')]).optional(),
+    prepTime: z.coerce.number().int().min(0).optional().or(z.literal('')),
+    cookTime: z.coerce.number().int().min(0).optional().or(z.literal('')),
+    totalTime: z.coerce.number().int().min(0).optional().or(z.literal('')),
+    servings: z.coerce.number().int().min(1).optional().or(z.literal('')),
     previewUrl: z.union([z.string().url(), z.literal('')]).optional(),
     source: z.union([z.string().url(), z.literal('')]).optional(),
     tags: z.array(z.string()),
@@ -236,14 +236,15 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
         try {
             setSubmitError(null);
 
-            // Convert empty strings to undefined for optional numeric fields
+            // Convert empty strings to undefined for optional fields
+            // Numeric fields are already coerced by Zod
             // Filter out empty items from arrays
             const cleanData = {
                 ...data,
-                prepTime: data.prepTime === '' ? undefined : Number(data.prepTime),
-                cookTime: data.cookTime === '' ? undefined : Number(data.cookTime),
-                totalTime: data.totalTime === '' ? undefined : Number(data.totalTime),
-                servings: data.servings === '' ? undefined : Number(data.servings),
+                prepTime: data.prepTime === '' ? undefined : data.prepTime,
+                cookTime: data.cookTime === '' ? undefined : data.cookTime,
+                totalTime: data.totalTime === '' ? undefined : data.totalTime,
+                servings: data.servings === '' ? undefined : data.servings,
                 previewUrl: data.previewUrl === '' ? undefined : data.previewUrl,
                 source: data.source === '' ? undefined : data.source,
                 ingredientGroups: data.ingredientGroups

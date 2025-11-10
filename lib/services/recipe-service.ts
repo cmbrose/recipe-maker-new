@@ -164,43 +164,24 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
   const previewUrl = input.previewUrl && input.previewUrl.trim() !== '' ? input.previewUrl : null;
   const source = input.source && input.source.trim() !== '' ? input.source : null;
 
-  // Use runCommandRaw to bypass Prisma's $$REMOVE issue with Cosmos DB
-  const now = new Date();
-  const document: Record<string, unknown> = {
-    name: input.name,
-    prepTime: input.prepTime ?? null,
-    cookTime: input.cookTime ?? null,
-    totalTime: input.totalTime ?? null,
-    servings: input.servings ?? null,
-    ingredients: input.ingredients as unknown as Prisma.InputJsonValue,
-    directions: input.directions || [],
-    previewUrl,
-    source,
-    sourceKind: input.sourceKind,
-    tags: input.tags || [],
-    notes: input.notes || [],
-    lastViewed: null,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const result = await prisma.$runCommandRaw({
-    insert: 'Recipe',
-    documents: [document as Prisma.InputJsonValue],
-  }) as { n: number; ok: number; insertedIds?: { '0': { $oid: string } } };
-
-  if (!result.ok || !result.insertedIds) {
-    throw new Error('Failed to create recipe');
-  }
-
-  // Fetch the created recipe
-  const recipe = await prisma.recipe.findUnique({
-    where: { id: result.insertedIds['0'].$oid },
+  // Explicitly set ALL fields (including optional ones as null) to avoid Cosmos DB $$REMOVE issue
+  const recipe = await prisma.recipe.create({
+    data: {
+      name: input.name,
+      prepTime: input.prepTime ?? null,
+      cookTime: input.cookTime ?? null,
+      totalTime: input.totalTime ?? null,
+      servings: input.servings ?? null,
+      ingredients: input.ingredients as unknown as Prisma.InputJsonValue,
+      directions: input.directions || [],
+      previewUrl,
+      source,
+      sourceKind: input.sourceKind,
+      tags: input.tags || [],
+      notes: input.notes || [],
+      lastViewed: null,
+    },
   });
-
-  if (!recipe) {
-    throw new Error('Recipe created but not found');
-  }
 
   return toRecipe(recipe);
 }
