@@ -56,6 +56,10 @@ jobs:
             --type connection-strings \
             --query "connectionStrings[?description=='Primary MongoDB Connection String'].connectionString" \
             --output tsv)
+          # Add database name to connection string
+          CONN="${CONN/10255\//10255\/recipe-maker}"
+          # Add directConnection=true to disable transactions (Cosmos DB requirement)
+          CONN="${CONN}&directConnection=true"
           echo "::add-mask::$CONN"
           echo "connection-string=$CONN" >> $GITHUB_OUTPUT
 

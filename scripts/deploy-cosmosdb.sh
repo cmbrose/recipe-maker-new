@@ -241,6 +241,12 @@ CONNECTION_STRING=$(az cosmosdb keys list \
     --query "connectionStrings[0].connectionString" \
     -o tsv)
 
+# Add database name to connection string (insert between port and query params)
+CONNECTION_STRING="${CONNECTION_STRING/10255\//10255\/${DATABASE_NAME}}"
+
+# Add directConnection=true to disable transactions (Cosmos DB requirement)
+CONNECTION_STRING="${CONNECTION_STRING}&directConnection=true"
+
 echo -e "${GREEN}✓ Connection string retrieved${NC}"
 echo ""
 

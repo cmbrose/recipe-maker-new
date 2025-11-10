@@ -73,6 +73,13 @@ if [ -z "$COSMOS_CONN" ]; then
     echo "  az cosmosdb show --name $COSMOS_ACCOUNT_NAME --resource-group $RESOURCE_GROUP"
     exit 1
 fi
+
+# Add database name to connection string (insert between port and query params)
+COSMOS_CONN="${COSMOS_CONN/10255\//10255\/recipe-maker}"
+
+# Add directConnection=true to disable transactions (Cosmos DB requirement)
+COSMOS_CONN="${COSMOS_CONN}&directConnection=true"
+
 echo "✓ Cosmos DB connection string retrieved"
 
 # Fetch Application Insights connection string
