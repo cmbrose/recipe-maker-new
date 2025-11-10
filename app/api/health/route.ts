@@ -5,19 +5,19 @@ export async function GET() {
   console.log('[Health Check] Starting...');
   
   try {
-    // Test if Prisma can be imported
+    // Test MongoDB connection
     const startTime = Date.now();
     
-    // Don't actually connect, just test import
-    const { PrismaClient } = await import('@prisma/client');
+    const { getDb } = await import('@/lib/db/mongo');
+    await getDb();
     const importTime = Date.now() - startTime;
     
-    console.log(`[Health Check] Prisma imported in ${importTime}ms`);
+    console.log(`[Health Check] MongoDB connected in ${importTime}ms`);
     
     return NextResponse.json({ 
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      prismaImportTime: importTime,
+      mongoConnectTime: importTime,
       nodeVersion: process.version,
       platform: process.platform,
       env: {

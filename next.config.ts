@@ -6,10 +6,8 @@ const nextConfig: NextConfig = {
     serverMinification: true,
   },
   
-  // Keep Prisma and OpenTelemetry external to avoid bundling issues
+  // Keep OpenTelemetry external to avoid bundling issues
   serverExternalPackages: [
-    '@prisma/client',
-    '@prisma/engines',
     '@azure/monitor-opentelemetry',
   ],
 };

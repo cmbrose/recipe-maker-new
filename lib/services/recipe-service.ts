@@ -1,47 +1,45 @@
-// Recipe service - handles all recipe CRUD operations and business logic
+// Recipe service - MongoDB version for Cosmos DB
+import { getRecipesCollection, ObjectId } from '@/lib/db/mongo';
+import type { Recipe, CreateRecipeInput, UpdateRecipeInput, RecipeFilters, RecipeListResult, SourceKind } from '@/types/recipe';
+import type { WithId, Document } from 'mongodb';
 
-import { prisma } from '@/lib/db/client';
-import { Prisma, type Recipe as PrismaRecipe } from '@prisma/client';
-import type {
-  Recipe,
-  CreateRecipeInput,
-  UpdateRecipeInput,
-  RecipeFilters,
-  RecipeListResult,
-  IngredientGroup,
-} from '@/types/recipe';
+type RecipeDoc = {
+  _id: ObjectId;
+  name: string;
+  prepTime?: number;
+  cookTime?: number;
+  totalTime?: number;
+  servings?: number;
+  ingredients: any;
+  directions: string[];
+  previewUrl?: string;
+  source?: string;
+  sourceKind: string;
+  tags: string[];
+  notes: string[];
+  lastViewed?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
-/**
- * Transform Prisma recipe to our Recipe type
- * 
- * Prisma's MongoDB connector uses JsonValue for complex nested structures (ingredients, directions).
- * This is a limitation of MongoDB support - typed composite types are only available for SQL databases.
- * 
- * This function provides type-safe transformation from Prisma's database model to our application model.
- * The cast is safe because:
- * 1. We control all writes through createRecipe/updateRecipe which enforce the correct structure
- * 2. The database schema validation ensures data integrity
- * 3. Runtime validation could be added here if needed (e.g., with Zod)
- */
-function toRecipe(dbRecipe: PrismaRecipe): Recipe {
+function toRecipe(doc: WithId<Document>): Recipe {
   return {
-    id: dbRecipe.id,
-    name: dbRecipe.name,
-    prepTime: dbRecipe.prepTime ?? undefined,
-    cookTime: dbRecipe.cookTime ?? undefined,
-    totalTime: dbRecipe.totalTime ?? undefined,
-    servings: dbRecipe.servings ?? undefined,
-    // Safe cast: we control all writes and ensure correct structure
-    ingredients: dbRecipe.ingredients as unknown as IngredientGroup[],
-    directions: dbRecipe.directions,
-    previewUrl: dbRecipe.previewUrl ?? undefined,
-    source: dbRecipe.source ?? undefined,
-    sourceKind: dbRecipe.sourceKind as 'url' | 'manual',
-    tags: dbRecipe.tags,
-    notes: dbRecipe.notes,
-    lastViewed: dbRecipe.lastViewed ?? undefined,
-    createdAt: dbRecipe.createdAt,
-    updatedAt: dbRecipe.updatedAt,
+    id: doc._id.toString(),
+    name: doc.name,
+    prepTime: doc.prepTime,
+    cookTime: doc.cookTime,
+    totalTime: doc.totalTime,
+    servings: doc.servings,
+    ingredients: doc.ingredients,
+    directions: doc.directions,
+    previewUrl: doc.previewUrl,
+    source: doc.source,
+    sourceKind: doc.sourceKind as SourceKind,
+    tags: doc.tags,
+    notes: doc.notes,
+    lastViewed: doc.lastViewed,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
   };
 }
 
@@ -58,64 +56,42 @@ export async function listRecipes(filters: RecipeFilters = {}): Promise<RecipeLi
     limit = 20,
   } = filters;
 
-  // Build where clause
-  const where: Prisma.RecipeWhereInput = {};
-
-  // Search by name (case-insensitive, word-based matching)
+  const query: any = {};
   if (search) {
-    where.name = {
-      contains: search,
-      mode: 'insensitive',
-    };
+    query.name = { $regex: search, $options: 'i' };
   }
-
-  // Filter by tags (AND logic - recipe must have all specified tags)
   if (tags && tags.length > 0) {
-    where.tags = {
-      hasEvery: tags,
-    };
+    query.tags = { $all: tags };
   }
-
-  // Filter by source kind
   if (sourceKind) {
-    where.sourceKind = sourceKind;
+    query.sourceKind = sourceKind;
   }
 
-  // Parse sort parameter (format: "field-direction")
+  // Sorting
   const [sortField, sortDirection] = sort.split('-') as [string, 'asc' | 'desc'];
-  const orderBy: Prisma.RecipeOrderByWithRelationInput = {};
-
+  const sortObj: any = {};
   switch (sortField) {
     case 'name':
-      orderBy.name = sortDirection;
+      sortObj.name = sortDirection === 'asc' ? 1 : -1;
       break;
     case 'viewed':
-      orderBy.lastViewed = sortDirection;
+      sortObj.lastViewed = sortDirection === 'asc' ? 1 : -1;
       break;
     case 'created':
     default:
-      orderBy.createdAt = sortDirection;
+      sortObj.createdAt = sortDirection === 'asc' ? 1 : -1;
       break;
   }
 
-  // Calculate pagination
   const skip = (page - 1) * limit;
-
-  // Execute queries
-  const [recipes, total] = await Promise.all([
-    prisma.recipe.findMany({
-      where,
-      orderBy,
-      skip,
-      take: limit,
-    }),
-    prisma.recipe.count({ where }),
+  const collection = await getRecipesCollection();
+  const [docs, total] = await Promise.all([
+    collection.find(query).sort(sortObj).skip(skip).limit(limit).toArray(),
+    collection.countDocuments(query),
   ]);
-
   const totalPages = Math.ceil(total / limit);
-
   return {
-    recipes: recipes.map(toRecipe),
+    recipes: docs.map((doc) => toRecipe(doc)),
     total,
     page,
     limit,
@@ -127,63 +103,57 @@ export async function listRecipes(filters: RecipeFilters = {}): Promise<RecipeLi
  * Get a single recipe by ID
  */
 export async function getRecipe(id: string): Promise<Recipe | null> {
-  const recipe = await prisma.recipe.findUnique({
-    where: { id },
-  });
-
-  return recipe ? toRecipe(recipe) : null;
+  const collection = await getRecipesCollection();
+  const doc = await collection.findOne({ _id: new ObjectId(id) });
+  return doc ? toRecipe(doc as WithId<Document>) : null;
 }
 
 /**
  * Get multiple recipes by IDs
  */
 export async function getRecipesByIds(ids: string[]): Promise<Recipe[]> {
-  const recipes = await prisma.recipe.findMany({
-    where: { id: { in: ids } },
-  });
-  
-  return recipes.map(toRecipe);
+  const collection = await getRecipesCollection();
+  const objectIds = ids.map((id) => new ObjectId(id));
+  const docs = await collection.find({ _id: { $in: objectIds } }).toArray();
+  return docs.map((doc) => toRecipe(doc as WithId<Document>));
 }
 
 /**
  * Get a recipe by source URL
  */
 export async function getRecipeByUrl(url: string): Promise<Recipe | null> {
-  const recipe = await prisma.recipe.findFirst({
-    where: { source: url },
-  });
-
-  return recipe ? toRecipe(recipe) : null;
+  const collection = await getRecipesCollection();
+  const doc = await collection.findOne({ source: url });
+  return doc ? toRecipe(doc as WithId<Document>) : null;
 }
 
 /**
  * Create a new recipe
  */
 export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
-  // Sanitize optional string fields (convert empty strings to null)
-  const previewUrl = input.previewUrl && input.previewUrl.trim() !== '' ? input.previewUrl : null;
-  const source = input.source && input.source.trim() !== '' ? input.source : null;
-
-  // Explicitly set ALL fields (including optional ones as null) to avoid Cosmos DB $$REMOVE issue
-  const recipe = await prisma.recipe.create({
-    data: {
-      name: input.name,
-      prepTime: input.prepTime ?? null,
-      cookTime: input.cookTime ?? null,
-      totalTime: input.totalTime ?? null,
-      servings: input.servings ?? null,
-      ingredients: input.ingredients as unknown as Prisma.InputJsonValue,
-      directions: input.directions || [],
-      previewUrl,
-      source,
-      sourceKind: input.sourceKind,
-      tags: input.tags || [],
-      notes: input.notes || [],
-      lastViewed: null,
-    },
-  });
-
-  return toRecipe(recipe);
+  const collection = await getRecipesCollection();
+  const now = new Date();
+  const doc: Omit<RecipeDoc, '_id'> = {
+    name: input.name,
+    prepTime: input.prepTime ?? undefined,
+    cookTime: input.cookTime ?? undefined,
+    totalTime: input.totalTime ?? undefined,
+    servings: input.servings ?? undefined,
+    ingredients: input.ingredients,
+    directions: input.directions || [],
+    previewUrl: input.previewUrl || undefined,
+    source: input.source || undefined,
+    sourceKind: input.sourceKind,
+    tags: input.tags || [],
+    notes: input.notes || [],
+    lastViewed: undefined,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const result = await collection.insertOne(doc);
+  const inserted = await collection.findOne({ _id: result.insertedId });
+  if (!inserted) throw new Error('Failed to create recipe');
+  return toRecipe(inserted as WithId<Document>);
 }
 
 /**
@@ -191,74 +161,40 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
  */
 export async function updateRecipe(input: UpdateRecipeInput): Promise<Recipe> {
   const { id, ...data } = input;
-
-  // Build update data, converting undefined to null (Cosmos DB requirement)
-  const updateData: Prisma.RecipeUpdateInput = {};
-  Object.keys(data).forEach((key) => {
-    const value = (data as Record<string, unknown>)[key];
-    if (value !== undefined) {
-      // Handle Json fields that need special casting
-      if (key === 'ingredients') {
-        (updateData as Record<string, unknown>)[key] = value as unknown as Prisma.InputJsonValue;
-      } 
-      // Handle optional string fields (convert empty strings to null)
-      else if ((key === 'previewUrl' || key === 'source') && typeof value === 'string' && value.trim() === '') {
-        (updateData as Record<string, unknown>)[key] = null;
-      }
-      else {
-        (updateData as Record<string, unknown>)[key] = value;
-      }
-    }
-  });
-
-  // If updateData is empty, just fetch and return the recipe
-  if (Object.keys(updateData).length === 0) {
-    const recipe = await prisma.recipe.findUnique({ where: { id } });
-    if (!recipe) {
-      throw new Error(`Recipe not found: ${id}`);
-    }
-    return toRecipe(recipe);
-  }
-
-  const recipe = await prisma.recipe.update({
-    where: { id },
-    data: updateData,
-  });
-
-  return toRecipe(recipe);
+  const collection = await getRecipesCollection();
+  const update: any = { ...data, updatedAt: new Date() };
+  // Remove undefined fields
+  Object.keys(update).forEach((k) => update[k] === undefined && delete update[k]);
+  await collection.updateOne({ _id: new ObjectId(id) }, { $set: update });
+  const doc = await collection.findOne({ _id: new ObjectId(id) });
+  if (!doc) throw new Error('Recipe not found');
+  return toRecipe(doc as WithId<Document>);
 }
 
 /**
  * Update the last viewed timestamp for a recipe
  */
 export async function markRecipeAsViewed(id: string): Promise<void> {
-  await prisma.recipe.update({
-    where: { id },
-    data: { lastViewed: new Date() },
-  });
+  const collection = await getRecipesCollection();
+  await collection.updateOne({ _id: new ObjectId(id) }, { $set: { lastViewed: new Date() } });
 }
 
 /**
  * Delete a recipe
  */
 export async function deleteRecipe(id: string): Promise<void> {
-  await prisma.recipe.delete({
-    where: { id },
-  });
+  const collection = await getRecipesCollection();
+  await collection.deleteOne({ _id: new ObjectId(id) });
 }
 
 /**
  * Get all unique tags across all recipes (for autocomplete)
  */
 export async function getAllTags(): Promise<string[]> {
-  const recipes = await prisma.recipe.findMany({
-    select: { tags: true },
-  });
-
-  // Flatten and deduplicate tags
-  const allTags = recipes.flatMap((r) => r.tags);
+  const collection = await getRecipesCollection();
+  const docs = await collection.find({}, { projection: { tags: 1 } }).toArray();
+  const allTags = docs.flatMap((r) => (r.tags ? r.tags : []));
   const uniqueTags = Array.from(new Set(allTags));
-
   return uniqueTags.sort();
 }
 
@@ -309,29 +245,16 @@ export function parseSearchQuery(query: string): { search?: string; tags: string
  * Get recently viewed recipes
  */
 export async function getRecentlyViewedRecipes(limit = 10): Promise<Recipe[]> {
-  const recipes = await prisma.recipe.findMany({
-    where: {
-      lastViewed: { not: null },
-    },
-    orderBy: {
-      lastViewed: 'desc',
-    },
-    take: limit,
-  });
-
-  return recipes.map(toRecipe);
+  const collection = await getRecipesCollection();
+  const docs = await collection.find({ lastViewed: { $ne: null } }).sort({ lastViewed: -1 }).limit(limit).toArray();
+  return docs.map((doc) => toRecipe(doc as WithId<Document>));
 }
 
 /**
  * Get recently created recipes
  */
 export async function getRecentlyCreatedRecipes(limit = 10): Promise<Recipe[]> {
-  const recipes = await prisma.recipe.findMany({
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: limit,
-  });
-
-  return recipes.map(toRecipe);
+  const collection = await getRecipesCollection();
+  const docs = await collection.find({}).sort({ createdAt: -1 }).limit(limit).toArray();
+  return docs.map((doc) => toRecipe(doc as WithId<Document>));
 }
