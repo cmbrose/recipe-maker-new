@@ -20,9 +20,7 @@ FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# Install pnpm
-RUN npm install -g pnpm
+ENV PORT=3000
 
 # Copy built app and dependencies
 COPY --from=base /app/.next ./.next
@@ -47,5 +45,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the app
-CMD ["pnpm", "start"]
+# Start the app directly with node
+CMD ["node_modules/.bin/next", "start"]
