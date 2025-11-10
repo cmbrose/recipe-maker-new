@@ -100,9 +100,54 @@ Creates and configures Azure Static Web App for hosting the Next.js application.
 - Commands to set GitHub secrets
 - Next steps for deployment setup
 
+### 3. deploy-container-app.sh
+
+Creates and configures Azure Container Apps for hosting the Recipe Maker application.
+
+**Usage:**
+```bash
+./scripts/deploy-container-app.sh [OPTIONS]
+```
+
+**Options:**
+- `--resource-group <name>` - Resource group name (default: recipe-maker-rg)
+- `--app-name <name>` - Container App name (default: recipe-maker-container)
+- `--location <region>` - Azure region (default: centralus)
+- `--sku <tier>` - Pricing tier: Consumption or Premium (default: Consumption)
+- `--subscription <id>` - Subscription Id, you probably want bb3afef1-e1ff-4b0e-a8e3-bd3a8e208b43
+- `--image <image>` - Docker image name (default: recipe-maker-image)
+- `--env <key=value>` - Environment variables (repeat for multiple)
+- `--help` - Show help message
+
+**What it does:**
+1. Creates resource group (if needed)
+2. Creates Azure Container Registry (ACR) for storing Docker images
+3. Builds and pushes Docker image to ACR
+4. Creates Container App with the specified image
+5. Configures environment variables and secrets
+6. Outputs URL of the deployed app
+
+**Example:**
+```bash
+# Use defaults
+./scripts/deploy-container-app.sh
+
+# Custom configuration
+./scripts/deploy-container-app.sh \
+  --app-name my-container-app \
+  --location westeurope \
+  --image myregistry.azurecr.io/myimage:latest \
+  --env COSMOS_DB_CONNECTION_STRING="<your-cosmos-conn-string>"
+```
+
+**Output:**
+- URL of the deployed Container App
+- Command to set GitHub secret for ACR login
+- Next steps for testing the deployment
+
 ### Data Migration Scripts
 
-#### 3. export-mysql-data.sh
+#### 4. export-mysql-data.sh
 
 Exports recipes and menus from MySQL database to JSON files using TypeScript/Prisma for reliable serialization.
 
@@ -144,7 +189,7 @@ export DATABASE_URL='mysql://user:pass@recipes-dev.mysql.database.azure.com:3306
 
 **Note:** This script uses TypeScript (`export-mysql-data.ts`) via `tsx` for reliable data serialization. The old bash/awk approach was too brittle for handling complex JSON data.
 
-#### 4. import-cosmos-data.sh
+#### 5. import-cosmos-data.sh
 
 Imports recipes and menus from JSON files into Cosmos DB via Prisma.
 
@@ -293,6 +338,44 @@ git push origin main
 ```
 
 GitHub Actions will automatically build and deploy your app!
+
+## Container App Deployment
+
+## Deploying to Azure Container Apps
+
+1. **Build and push Docker image**
+2. **Deploy to Azure Container Apps**
+
+### Prerequisites
+- Azure CLI (`az`)
+- Docker
+- Azure Container Registry (created by script)
+- Cosmos DB and Application Insights connection strings
+
+### Steps
+
+```bash
+# Set environment variables (or pass as flags)
+export COSMOS_DB_CONNECTION_STRING="<cosmos-conn-string>"
+export APPLICATIONINSIGHTS_CONNECTION_STRING="<app-insights-conn-string>"
+
+# Deploy
+./scripts/deploy-container-app.sh \
+  --resource-group recipe-maker-rg \
+  --app-name recipe-maker-container \
+  --location centralus
+```
+
+- The script will build the Docker image, push to ACR, and deploy to Azure Container Apps.
+- The app will be available at the URL output by the script.
+
+### Environment Variables
+- `COSMOS_DB_CONNECTION_STRING` (required)
+- `APPLICATIONINSIGHTS_CONNECTION_STRING` (optional, for telemetry)
+
+---
+
+## Cleaned up: Azure SWA files and scripts have been removed.
 
 ## Environment Variables
 
