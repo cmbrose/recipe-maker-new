@@ -163,17 +163,18 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
   const recipe = await prisma.recipe.create({
     data: {
       name: input.name,
-      prepTime: input.prepTime,
-      cookTime: input.cookTime,
-      totalTime: input.totalTime,
-      servings: input.servings,
+      prepTime: input.prepTime ?? null,
+      cookTime: input.cookTime ?? null,
+      totalTime: input.totalTime ?? null,
+      servings: input.servings ?? null,
       ingredients: input.ingredients as unknown as Prisma.InputJsonValue,
       directions: input.directions || [],
-      previewUrl: input.previewUrl,
-      source: input.source,
+      previewUrl: input.previewUrl ?? null,
+      source: input.source ?? null,
       sourceKind: input.sourceKind,
       tags: input.tags || [],
       notes: input.notes || [],
+      lastViewed: null,
     },
   });
 
