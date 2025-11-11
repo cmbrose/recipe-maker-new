@@ -35,7 +35,6 @@ export async function scrapeBudgetBytes(
 
   const prepTime = parseTime(prepTimeText);
   const cookTime = parseTime(cookTimeText);
-  const totalTime = prepTime && cookTime ? prepTime + cookTime : undefined;
 
   // Extract servings
   const servingsText = root

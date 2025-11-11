@@ -82,10 +82,10 @@ function useAutoExpandingFieldArray<T>({
 // Custom validation ensures filtered arrays are not empty
 const recipeSchema = z.object({
     name: z.string().min(1, 'Recipe name is required').max(200, 'Name is too long'),
-    prepTime: z.coerce.number().int().min(0).optional().or(z.literal('')),
-    cookTime: z.coerce.number().int().min(0).optional().or(z.literal('')),
-    totalTime: z.coerce.number().int().min(0).optional().or(z.literal('')),
-    servings: z.coerce.number().int().min(1).optional().or(z.literal('')),
+    prepTime: z.coerce.string(),
+    cookTime: z.coerce.string(),
+    totalTime: z.coerce.string(),
+    servings: z.coerce.string(),
     previewUrl: z.union([z.string().url(), z.literal('')]).optional(),
     source: z.union([z.string().url(), z.literal('')]).optional(),
     tags: z.array(z.string()),
@@ -320,7 +320,7 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                                     <FormItem>
                                         <FormLabel>Prep Time (min)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="15" {...field} />
+                                            <Input placeholder="15 min" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -334,7 +334,7 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                                     <FormItem>
                                         <FormLabel>Cook Time (min)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="30" {...field} />
+                                            <Input placeholder="30 min" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -348,7 +348,7 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                                     <FormItem>
                                         <FormLabel>Total Time (min)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="45" {...field} />
+                                            <Input placeholder="45 min" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -362,7 +362,7 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                                     <FormItem>
                                         <FormLabel>Servings</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="4" {...field} />
+                                            <Input placeholder="4" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

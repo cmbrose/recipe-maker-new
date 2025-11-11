@@ -106,9 +106,9 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
             <CardHeader>
               <CardTitle>Directions</CardTitle>
               <div className="flex gap-4 text-sm text-muted-foreground">
-                {recipe.prepTime && <span>Prep: {recipe.prepTime} min</span>}
-                {recipe.cookTime && <span>Cook: {recipe.cookTime} min</span>}
-                {recipe.totalTime && <span>Total: {recipe.totalTime} min</span>}
+                {recipe.prepTime && <span>Prep: {recipe.prepTime}</span>}
+                {recipe.cookTime && <span>Cook: {recipe.cookTime}</span>}
+                {recipe.totalTime && <span>Total: {recipe.totalTime}</span>}
               </div>
             </CardHeader>
             <CardContent>

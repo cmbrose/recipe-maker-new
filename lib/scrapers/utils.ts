@@ -8,47 +8,16 @@ import type { IngredientGroup } from '@/types/recipe';
  * Parse time string to minutes
  * Examples: "30 minutes", "1 hour", "1 hour 30 minutes", "PT30M"
  */
-export function parseTime(timeStr: string | null | undefined): number | undefined {
-  if (!timeStr) return undefined;
-
-  const str = timeStr.toLowerCase().trim();
-
-  // Handle ISO 8601 duration format (PT1H30M)
-  if (str.startsWith('pt')) {
-    const hours = str.match(/(\d+)h/)?.[1];
-    const minutes = str.match(/(\d+)m/)?.[1];
-    return (hours ? parseInt(hours) * 60 : 0) + (minutes ? parseInt(minutes) : 0);
-  }
-
-  // Handle text format
-  let totalMinutes = 0;
-
-  // Extract hours
-  const hoursMatch = str.match(/(\d+)\s*(?:hour|hr|h)/);
-  if (hoursMatch) {
-    totalMinutes += parseInt(hoursMatch[1]) * 60;
-  }
-
-  // Extract minutes
-  const minutesMatch = str.match(/(\d+)\s*(?:minute|min|m)/);
-  if (minutesMatch) {
-    totalMinutes += parseInt(minutesMatch[1]);
-  }
-
-  return totalMinutes > 0 ? totalMinutes : undefined;
+export function parseTime(timeStr: string | null | undefined): string | null | undefined {
+  return timeStr;
 }
 
 /**
  * Parse servings string to number
  * Examples: "4", "4 servings", "serves 4", "4-6 servings"
  */
-export function parseServings(servingsStr: string | null | undefined): number | undefined {
-  if (!servingsStr) return undefined;
-
-  const str = servingsStr.trim();
-  const match = str.match(/(\d+)/);
-
-  return match ? parseInt(match[1]) : undefined;
+export function parseServings(servingsStr: string | null | undefined): string | null | undefined {
+  return servingsStr
 }
 
 /**

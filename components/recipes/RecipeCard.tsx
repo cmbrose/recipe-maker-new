@@ -17,8 +17,9 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
                 <CardHeader>
                     <CardTitle className="line-clamp-2">{recipe.name}</CardTitle>
                     <CardDescription className="flex gap-2 flex-wrap">
-                        {recipe.prepTime && <span>Prep: {recipe.prepTime}m</span>}
-                        {recipe.cookTime && <span>Cook: {recipe.cookTime}m</span>}
+                        {recipe.prepTime && <span>Prep: {recipe.prepTime}</span>}
+                        {recipe.cookTime && <span>Cook: {recipe.cookTime}</span>}
+                        {recipe.totalTime && <span>Total: {recipe.totalTime}</span>}
                         {recipe.servings && <span>Serves: {recipe.servings}</span>}
                     </CardDescription>
                 </CardHeader>

@@ -260,10 +260,11 @@ export function MenuEditor({
                                                             )}
                                                         </div>
                                                     )}
-                                                    {(recipe.prepTime || recipe.cookTime || recipe.servings) && (
+                                                    {(recipe.prepTime || recipe.cookTime || recipe.totalTime || recipe.servings) && (
                                                         <div className="flex gap-3 mt-2 text-sm text-muted-foreground">
-                                                            {recipe.prepTime && <span>Prep: {recipe.prepTime}m</span>}
-                                                            {recipe.cookTime && <span>Cook: {recipe.cookTime}m</span>}
+                                                            {recipe.prepTime && <span>Prep: {recipe.prepTime}</span>}
+                                                            {recipe.cookTime && <span>Cook: {recipe.cookTime}</span>}
+                                                            {recipe.totalTime && <span>Total: {recipe.totalTime}</span>}
                                                             {recipe.servings && <span>Servings: {recipe.servings}</span>}
                                                         </div>
                                                     )}

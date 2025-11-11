@@ -6,10 +6,10 @@ import type { WithId, Document } from 'mongodb';
 type RecipeDoc = {
   _id: ObjectId;
   name: string;
-  prepTime?: number;
-  cookTime?: number;
-  totalTime?: number;
-  servings?: number;
+  prepTime?: string;
+  cookTime?: string;
+  totalTime?: string;
+  servings?: string;
   ingredients: any;
   directions: string[];
   previewUrl?: string;

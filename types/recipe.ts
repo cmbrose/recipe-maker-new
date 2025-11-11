@@ -20,10 +20,10 @@ export type SourceKind = 'url' | 'manual';
 export interface Recipe {
   id: string;
   name: string;
-  prepTime?: number;        // minutes
-  cookTime?: number;        // minutes
-  totalTime?: number;       // minutes
-  servings?: number;
+  prepTime?: string;        // minutes
+  cookTime?: string;        // minutes
+  totalTime?: string;       // minutes
+  servings?: string;
   ingredients: IngredientGroup[];
   directions: string[];
   previewUrl?: string;
@@ -41,10 +41,10 @@ export interface Recipe {
  */
 export interface CreateRecipeInput {
   name: string;
-  prepTime?: number;
-  cookTime?: number;
-  totalTime?: number;
-  servings?: number;
+  prepTime?: string;
+  cookTime?: string;
+  totalTime?: string;
+  servings?: string;
   ingredients: IngredientGroup[];
   directions: string[];
   previewUrl?: string;
@@ -60,10 +60,10 @@ export interface CreateRecipeInput {
 export interface UpdateRecipeInput {
   id: string;
   name?: string;
-  prepTime?: number;
-  cookTime?: number;
-  totalTime?: number;
-  servings?: number;
+  prepTime?: string;
+  cookTime?: string;
+  totalTime?: string;
+  servings?: string;
   ingredients?: IngredientGroup[];
   directions?: string[];
   previewUrl?: string;
