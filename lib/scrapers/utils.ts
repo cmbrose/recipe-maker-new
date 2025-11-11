@@ -70,7 +70,7 @@ export function getBestImageUrl(
  * Convert list of ingredient strings to grouped format
  */
 export function groupIngredients(items: string[]): IngredientGroup[] {
-  return [{ items }];
+  return [{ ingredients: items }];
 }
 
 /**

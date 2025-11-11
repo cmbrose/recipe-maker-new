@@ -6,7 +6,7 @@
  */
 export interface IngredientGroup {
   name?: string;  // Optional group name
-  items: string[]; // List of ingredients
+  ingredients: string[]; // List of ingredients
 }
 
 /**

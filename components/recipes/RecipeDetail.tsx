@@ -88,7 +88,7 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
                     <h3 className="font-semibold mb-2">{group.name}</h3>
                   )}
                   <ul className="space-y-1">
-                    {group.items.map((item, itemIdx) => (
+                    {group.ingredients.map((item, itemIdx) => (
                       <li key={itemIdx} className="text-sm">
                         • {item}
                       </li>
