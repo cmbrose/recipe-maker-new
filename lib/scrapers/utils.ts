@@ -5,22 +5,6 @@ import type { AnyNode } from 'domhandler';
 import type { IngredientGroup } from '@/types/recipe';
 
 /**
- * Parse time string to minutes
- * Examples: "30 minutes", "1 hour", "1 hour 30 minutes", "PT30M"
- */
-export function parseTime(timeStr: string | null | undefined): string | undefined {
-  return timeStr || undefined;
-}
-
-/**
- * Parse servings string to number
- * Examples: "4", "4 servings", "serves 4", "4-6 servings"
- */
-export function parseServings(servingsStr: string | null | undefined): string | undefined {
-  return servingsStr || undefined;
-}
-
-/**
  * Clean text by removing extra whitespace and normalizing
  */
 export function cleanText(text: string | null | undefined): string {

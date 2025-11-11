@@ -86,19 +86,19 @@ const recipeSchema = z.object({
     cookTime: z.coerce.string().optional(),
     totalTime: z.coerce.string().optional(),
     servings: z.coerce.string().optional(),
-    previewUrl: z.union([z.string().url(), z.literal('')]).optional(),
-    source: z.union([z.string().url(), z.literal('')]).optional(),
+    previewUrl: z.union([z.url(), z.literal('')]).optional(),
+    source: z.union([z.url(), z.literal('')]).optional(),
     tags: z.array(z.string()),
     notes: z.array(z.string()),
     ingredientGroups: z.array(
         z.object({
             name: z.string().optional(),
-            items: z.array(z.string()),
+            ingredients: z.array(z.string()),
         })
     ).refine(
         (groups) => {
             // Check if there's at least one group with at least one non-empty item
-            return groups.some(group => group.items.some(item => item.trim() !== ''));
+            return groups.some(group => group.ingredients.some(item => item.trim() !== ''));
         },
         { message: 'At least one ingredient is required' }
     ),
@@ -198,7 +198,7 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                 source: '',
                 tags: [],
                 notes: [],
-                ingredientGroups: [{ name: '', items: [''] }],
+                ingredientGroups: [{ name: '', ingredients: [''] }],
                 directions: [''],
             },
     });
@@ -250,9 +250,9 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                 ingredientGroups: data.ingredientGroups
                     .map(group => ({
                         ...group,
-                        items: group.items.filter(item => item.trim() !== ''),
+                        ingredients: group.ingredients.filter(item => item.trim() !== ''),
                     }))
-                    .filter(group => group.items.length > 0),
+                    .filter(group => group.ingredients.length > 0),
                 directions: data.directions.filter(dir => dir.trim() !== ''),
                 notes: data.notes.filter(note => note.trim() !== ''),
             };
@@ -409,7 +409,7 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => appendGroup({ name: '', items: [''] })}
+                                onClick={() => appendGroup({ name: '', ingredients: [''] })}
                             >
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Group

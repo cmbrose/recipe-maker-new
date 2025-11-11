@@ -5,11 +5,10 @@ import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
 import type { RecipeScraperResult } from '@/types/scraper';
 import {
-  parseTime,
-  parseServings,
   cleanText,
   createDirections,
 } from './utils';
+import { IngredientGroup } from '@/types/recipe';
 
 export async function scrapeKingArthur(
   html: string,
@@ -32,17 +31,12 @@ export async function scrapeKingArthur(
   }
 
   // Extract times
-  const prepTimeText = quickviewContent.find('.stat__item--prep span').text();
-  const cookTimeText = quickviewContent.find('.stat__item--bake span').text();
-  const totalTimeText = quickviewContent.find('.stat__item--total span').text();
-
-  const prepTime = parseTime(prepTimeText);
-  const cookTime = parseTime(cookTimeText);
-  const totalTime = parseTime(totalTimeText);
+  const prepTime = quickviewContent.find('.stat__item--prep span').text();
+  const cookTime = quickviewContent.find('.stat__item--bake span').text();
+  const totalTime = quickviewContent.find('.stat__item--total span').text();
 
   // Extract servings
-  const servingsText = quickviewContent.find('.stat__item--yield span').text();
-  const servings = parseServings(servingsText);
+  const servings = quickviewContent.find('.stat__item--yield span').text();
 
   // Extract preview image
   let previewUrl: string | undefined;
@@ -93,8 +87,8 @@ export async function scrapeKingArthur(
 function extractIngredients(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ name?: string; items: string[] }> {
-  const groups: Array<{ name?: string; items: string[] }> = [];
+): Array<IngredientGroup> {
+  const groups: Array<IngredientGroup> = [];
 
   const groupElems = root.find('.recipe__ingredients .ingredients-list .ingredient-section');
 
@@ -119,12 +113,12 @@ function extractIngredients(
     if (items.length > 0) {
       groups.push({
         name: groupName || undefined,
-        items,
+        ingredients: items,
       });
     }
   });
 
-  return groups.length > 0 ? groups : [{ items: [] }];
+  return groups.length > 0 ? groups : [{ ingredients: [] }];
 }
 
 function extractDirections(

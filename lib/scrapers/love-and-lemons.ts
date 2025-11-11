@@ -5,11 +5,10 @@ import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
 import type { RecipeScraperResult } from '@/types/scraper';
 import {
-  parseTime,
-  parseServings,
   cleanText,
   createDirections,
 } from './utils';
+import { IngredientGroup } from '@/types/recipe';
 
 export async function scrapeLoveAndLemons(
   html: string,
@@ -45,17 +44,12 @@ function scrapeType1(
   }
 
   // Extract times
-  const prepTimeText = extractTime($, root, 'prep');
-  const cookTimeText = extractTime($, root, 'cook');
-  const totalTimeText = extractTime($, root, 'total');
-
-  const prepTime = parseTime(prepTimeText);
-  const cookTime = parseTime(cookTimeText);
-  const totalTime = parseTime(totalTimeText);
+  const prepTime = extractTime($, root, 'prep');
+  const cookTime = extractTime($, root, 'cook');
+  const totalTime = extractTime($, root, 'total');
 
   // Extract servings
-  const servingsText = root.find('.wprm-recipe-servings-container .wprm-recipe-servings').text();
-  const servings = parseServings(servingsText);
+  const servings = root.find('.wprm-recipe-servings-container .wprm-recipe-servings').text();
 
   // Extract preview image
   const imgElement = root.find('.wprm-recipe-image img').first();
@@ -113,17 +107,12 @@ function scrapeType2(
   }
 
   // Extract times
-  const prepTimeText = root.find('.ERSTimes time[itemprop="prepTime"]').text();
-  const cookTimeText = root.find('.ERSTimes time[itemprop="cookTime"]').text();
-  const totalTimeText = root.find('.ERSTimes time[itemprop="totalTime"]').text();
-
-  const prepTime = parseTime(prepTimeText);
-  const cookTime = parseTime(cookTimeText);
-  const totalTime = parseTime(totalTimeText);
+  const prepTime = root.find('.ERSTimes time[itemprop="prepTime"]').text();
+  const cookTime = root.find('.ERSTimes time[itemprop="cookTime"]').text();
+  const totalTime = root.find('.ERSTimes time[itemprop="totalTime"]').text();
 
   // Extract servings
-  const servingsText = root.find('.ERSServes span').text();
-  const servings = parseServings(servingsText);
+  const servings = root.find('.ERSServes span').text();
 
   // Extract preview image
   const previewUrl = root.find('img[itemprop="image"]').attr('src');
@@ -173,8 +162,8 @@ function extractTime(
 function extractIngredientsType1(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ name?: string; items: string[] }> {
-  const groups: Array<{ name?: string; items: string[] }> = [];
+): Array<IngredientGroup> {
+  const groups: Array<IngredientGroup> = [];
 
   const groupElems = root.find(
     '.wprm-recipe-ingredients-container .wprm-recipe-ingredient-group'
@@ -214,12 +203,12 @@ function extractIngredientsType1(
     if (items.length > 0) {
       groups.push({
         name: groupName || undefined,
-        items,
+        ingredients: items,
       });
     }
   });
 
-  return groups.length > 0 ? groups : [{ items: [] }];
+  return groups.length > 0 ? groups : [{ ingredients: [] }];
 }
 
 /**
@@ -228,8 +217,8 @@ function extractIngredientsType1(
 function extractIngredientsType2(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ name?: string; items: string[] }> {
-  const groups: Array<{ name?: string; items: string[] }> = [];
+): Array<IngredientGroup> {
+  const groups: Array<IngredientGroup> = [];
   let currentGroupName: string | undefined;
 
   const ingredientsBody = root.find('.ERSIngredients').first();
@@ -253,7 +242,7 @@ function extractIngredientsType2(
       if (items.length > 0) {
         groups.push({
           name: currentGroupName,
-          items,
+          ingredients: items,
         });
       }
 
@@ -261,7 +250,7 @@ function extractIngredientsType2(
     }
   });
 
-  return groups.length > 0 ? groups : [{ items: [] }];
+  return groups.length > 0 ? groups : [{ ingredients: [] }];
 }
 
 /**

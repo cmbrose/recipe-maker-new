@@ -5,11 +5,10 @@ import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
 import type { RecipeScraperResult } from '@/types/scraper';
 import {
-  parseTime,
-  parseServings,
   cleanText,
   createDirections,
 } from './utils';
+import { IngredientGroup } from '@/types/recipe';
 
 export async function scrapeSkinnyTaste(
   html: string,
@@ -45,15 +44,10 @@ function scrapeType2(
   }
 
   // Extract times
-  const prepTimeText = extractTime($, root, 'prep');
-  const cookTimeText = extractTime($, root, 'cook');
-
-  const prepTime = parseTime(prepTimeText);
-  const cookTime = parseTime(cookTimeText);
-
+  const prepTime = extractTime($, root, 'prep');
+  const cookTime = extractTime($, root, 'cook');
   // Extract servings
-  const servingsText = root.find('.wprm-recipe-servings-with-unit').text();
-  const servings = parseServings(servingsText);
+  const servings = root.find('.wprm-recipe-servings-with-unit').text();
 
   // Extract preview image
   const imgElement = root.find('.wprm-recipe-image img').first();
@@ -110,12 +104,10 @@ function scrapeType1(
   }
 
   // Extract times (Type1 only has total time)
-  const totalTimeText = root.find('.recipe-meta p').text();
-  const totalTime = parseTime(totalTimeText);
+  const totalTime = root.find('.recipe-meta p').text();
 
   // Extract servings
-  const servingsText = root.find('.nutrition .yield').text();
-  const servings = parseServings(servingsText);
+  const servings = root.find('.nutrition .yield').text();
 
   // Extract preview image
   let previewUrl: string | undefined;
@@ -173,8 +165,8 @@ function extractTime(
 function extractIngredientsType2(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ name?: string; items: string[] }> {
-  const groups: Array<{ name?: string; items: string[] }> = [];
+): Array<IngredientGroup> {
+  const groups: Array<IngredientGroup> = [];
 
   const groupElems = root.find(
     '.wprm-recipe-ingredients-container .wprm-recipe-ingredient-group'
@@ -206,12 +198,12 @@ function extractIngredientsType2(
     if (items.length > 0) {
       groups.push({
         name: groupName || undefined,
-        items,
+        ingredients: items,
       });
     }
   });
 
-  return groups.length > 0 ? groups : [{ items: [] }];
+  return groups.length > 0 ? groups : [{ ingredients: [] }];
 }
 
 /**
@@ -220,8 +212,8 @@ function extractIngredientsType2(
 function extractIngredientsType1(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ name?: string; items: string[] }> {
-  const groups: Array<{ name?: string; items: string[] }> = [];
+): Array<IngredientGroup> {
+  const groups: Array<IngredientGroup> = [];
   let currentGroupName: string | undefined;
   let currentItems: string[] = [];
 
@@ -236,7 +228,7 @@ function extractIngredientsType1(
       if (currentItems.length > 0) {
         groups.push({
           name: currentGroupName,
-          items: currentItems,
+          ingredients: currentItems,
         });
       }
 
@@ -256,11 +248,11 @@ function extractIngredientsType1(
   if (currentItems.length > 0) {
     groups.push({
       name: currentGroupName,
-      items: currentItems,
+      ingredients: currentItems,
     });
   }
 
-  return groups.length > 0 ? groups : [{ items: [] }];
+  return groups.length > 0 ? groups : [{ ingredients: [] }];
 }
 
 /**

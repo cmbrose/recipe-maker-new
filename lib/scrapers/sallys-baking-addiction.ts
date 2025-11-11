@@ -5,11 +5,10 @@ import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
 import type { RecipeScraperResult } from '@/types/scraper';
 import {
-  parseTime,
-  parseServings,
   cleanText,
   createDirections,
 } from './utils';
+import { IngredientGroup } from '@/types/recipe';
 
 export async function scrapeSallysBakingAddiction(
   html: string,
@@ -30,15 +29,10 @@ export async function scrapeSallysBakingAddiction(
   }
 
   // Extract times
-  const prepTimeText = root.find('.tasty-recipes-prep-time').text();
-  const cookTimeText = root.find('.tasty-recipes-cook-time').text();
-
-  const prepTime = parseTime(prepTimeText);
-  const cookTime = parseTime(cookTimeText);
-
+  const prepTime = root.find('.tasty-recipes-prep-time').text();
+  const cookTime = root.find('.tasty-recipes-cook-time').text();
   // Extract servings
-  const servingsText = root.find('.tasty-recipes-yield').text();
-  const servings = parseServings(servingsText);
+  const servings = root.find('.tasty-recipes-yield').text();
 
   // Extract preview image
   const imgElement = root.find('.tasty-recipes-image img').first();
@@ -83,8 +77,8 @@ export async function scrapeSallysBakingAddiction(
 function extractIngredients(
   $: cheerio.CheerioAPI,
   root: cheerio.Cheerio<AnyNode>
-): Array<{ name?: string; items: string[] }> {
-  const groups: Array<{ name?: string; items: string[] }> = [];
+): Array<IngredientGroup> {
+  const groups: Array<IngredientGroup> = [];
   let currentGroupName: string | undefined;
 
   const ingredientsBody = root.find('.tasty-recipes-ingredients-body').first();
@@ -108,7 +102,7 @@ function extractIngredients(
       if (items.length > 0) {
         groups.push({
           name: currentGroupName,
-          items,
+          ingredients: items,
         });
       }
 
@@ -116,7 +110,7 @@ function extractIngredients(
     }
   });
 
-  return groups.length > 0 ? groups : [{ items: [] }];
+  return groups.length > 0 ? groups : [{ ingredients: [] }];
 }
 
 function extractDirections(

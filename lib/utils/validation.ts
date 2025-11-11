@@ -7,7 +7,7 @@ import { z } from 'zod';
  */
 export const IngredientGroupSchema = z.object({
   name: z.string().optional(),
-  items: z.array(z.string().min(1)),
+  ingredients: z.array(z.string().min(1)),
 });
 
 /**
