@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { RecipeList } from '@/components/recipes/RecipeList';
 import { RecipeSearch } from '@/components/recipes/RecipeSearch';
-import { useRecipes, recipeKeys } from '@/lib/hooks/useRecipes';
+import { useInfiniteRecipes, recipeKeys } from '@/lib/hooks/useRecipes';
 import { Button } from '@/components/ui/button';
 import { Plus, Link as LinkIcon } from 'lucide-react';
 import { parseTagsFromUrl } from '@/lib/utils/tag-url';
@@ -18,7 +18,21 @@ function RecipesContent() {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<RecipeFilters>({});
-  const { data, isLoading, error } = useRecipes(filters);
+  const { 
+    data, 
+    isLoading, 
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteRecipes(filters, 20);
+
+  // Flatten the paginated data
+  const recipes = useMemo(() => {
+    return data?.pages.flatMap(page => page.recipes) || [];
+  }, [data]);
+
+  const totalRecipes = data?.pages[0]?.total || 0;
 
   // Invalidate recipe lists cache when component mounts to ensure fresh data
   useEffect(() => {
@@ -66,7 +80,7 @@ function RecipesContent() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Recipes</h1>
           <p className="text-muted-foreground">
-            {data?.total ? `${data.total} recipe${data.total !== 1 ? 's' : ''}` : 'Loading...'}
+            {totalRecipes ? `${totalRecipes} recipe${totalRecipes !== 1 ? 's' : ''}` : 'Loading...'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -95,7 +109,13 @@ function RecipesContent() {
         </div>
       )}
 
-      <RecipeList recipes={data?.recipes || []} isLoading={isLoading} />
+      <RecipeList 
+        recipes={recipes} 
+        isLoading={isLoading}
+        isFetchingNextPage={isFetchingNextPage}
+        hasNextPage={hasNextPage}
+        fetchNextPage={fetchNextPage}
+      />
     </div>
   );
 }

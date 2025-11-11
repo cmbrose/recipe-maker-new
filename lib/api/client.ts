@@ -31,9 +31,11 @@ export const recipeApi = {
     if (filters?.search) params.append('search', filters.search);
     if (filters?.tags) params.append('tags', filters.tags.join(','));
     if (filters?.sort) params.append('sort', filters.sort);
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
 
     const query = params.toString();
-    return fetchAPI<{ recipes: Recipe[]; total: number }>(
+    return fetchAPI<{ recipes: Recipe[]; total: number; page: number; limit: number; totalPages: number }>(
       `/api/recipes${query ? `?${query}` : ''}`
     );
   },

@@ -124,7 +124,7 @@ interface RecipeEditorProps {
 function IngredientGroupItems({ control, groupIndex }: { control: Control<RecipeFormValues>; groupIndex: number }) {
     const { fields, remove, inputRefs } = useAutoExpandingFieldArray({
         control,
-        name: `ingredientGroups.${groupIndex}.items` as any,
+        name: `ingredientGroups.${groupIndex}.ingredients` as any,
         newItemValue: '',
         isEmpty: (item: string) => item.trim() === '',
     });
@@ -135,7 +135,7 @@ function IngredientGroupItems({ control, groupIndex }: { control: Control<Recipe
                 <div key={item.id} className="flex items-center gap-2">
                     <Controller
                         control={control}
-                        name={`ingredientGroups.${groupIndex}.items.${itemIndex}` as any}
+                        name={`ingredientGroups.${groupIndex}.ingredients.${itemIndex}` as any}
                         render={({ field }) => (
                             <Input
                                 placeholder="e.g., 2 cups flour"

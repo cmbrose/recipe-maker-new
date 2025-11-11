@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { recipeApi } from '@/lib/api/client';
 import type { Recipe, RecipeFilters, CreateRecipeInput } from '@/types/recipe';
 
@@ -16,6 +16,22 @@ export function useRecipes(filters: RecipeFilters = {}) {
   return useQuery({
     queryKey: recipeKeys.list(filters),
     queryFn: () => recipeApi.list(filters),
+  });
+}
+
+export function useInfiniteRecipes(filters: RecipeFilters = {}, limit = 20) {
+  return useInfiniteQuery({
+    queryKey: recipeKeys.list({ ...filters, limit }),
+    queryFn: ({ pageParam }: { pageParam: number }) =>
+      recipeApi.list({ ...filters, page: pageParam, limit }),
+    getNextPageParam: (lastPage) => {
+      // Use the page info from the API response
+      if (lastPage.page < lastPage.totalPages) {
+        return lastPage.page + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
   });
 }
 
