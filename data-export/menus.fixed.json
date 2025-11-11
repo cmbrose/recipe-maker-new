@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "name": "Dinners",
+    "recipes": [],
+    "createdAt": "2022-01-27T14:03:36.010Z",
+    "updatedAt": "2025-03-29T14:41:56.471Z"
+  },
+  {
+    "id": 2,
+    "name": "Grandma Brose Backlog",
+    "recipes": [],
+    "createdAt": "2022-01-29T16:14:11.463Z",
+    "updatedAt": "2022-03-21T02:17:48.918Z"
+  }
+]
