@@ -83,7 +83,6 @@ export async function scrapeBudgetBytes(
     name,
     prepTime,
     cookTime,
-    totalTime,
     servings,
     ingredients,
     directions,

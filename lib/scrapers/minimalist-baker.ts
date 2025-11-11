@@ -35,7 +35,6 @@ export async function scrapeMinimalistBaker(
 
   const prepTime = parseTime(prepTimeText);
   const cookTime = parseTime(cookTimeText);
-  const totalTime = prepTime && cookTime ? prepTime + cookTime : undefined;
 
   // Extract servings
   const servingsText = root
@@ -76,7 +75,6 @@ export async function scrapeMinimalistBaker(
     name,
     prepTime,
     cookTime,
-    totalTime,
     servings,
     ingredients,
     directions,

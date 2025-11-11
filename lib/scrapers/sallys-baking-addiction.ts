@@ -35,7 +35,6 @@ export async function scrapeSallysBakingAddiction(
 
   const prepTime = parseTime(prepTimeText);
   const cookTime = parseTime(cookTimeText);
-  const totalTime = prepTime && cookTime ? prepTime + cookTime : undefined;
 
   // Extract servings
   const servingsText = root.find('.tasty-recipes-yield').text();
@@ -74,7 +73,6 @@ export async function scrapeSallysBakingAddiction(
     name,
     prepTime,
     cookTime,
-    totalTime,
     servings,
     ingredients,
     directions,

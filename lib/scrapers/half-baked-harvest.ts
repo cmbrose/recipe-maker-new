@@ -35,7 +35,6 @@ export async function scrapeHalfBakedHarvest(
 
   const prepTime = parseTime(prepTimeText);
   const cookTime = parseTime(cookTimeText);
-  const totalTime = prepTime && cookTime ? prepTime + cookTime : undefined;
 
   // Extract servings
   const servingsText = root
@@ -56,7 +55,6 @@ export async function scrapeHalfBakedHarvest(
     name,
     prepTime,
     cookTime,
-    totalTime,
     servings,
     ingredients,
     directions,

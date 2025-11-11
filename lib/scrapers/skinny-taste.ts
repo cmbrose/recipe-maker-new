@@ -50,7 +50,6 @@ function scrapeType2(
 
   const prepTime = parseTime(prepTimeText);
   const cookTime = parseTime(cookTimeText);
-  const totalTime = prepTime && cookTime ? prepTime + cookTime : undefined;
 
   // Extract servings
   const servingsText = root.find('.wprm-recipe-servings-with-unit').text();
@@ -90,7 +89,6 @@ function scrapeType2(
     name,
     prepTime,
     cookTime,
-    totalTime,
     servings,
     ingredients,
     directions,
