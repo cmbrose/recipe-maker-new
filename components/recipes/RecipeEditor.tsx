@@ -82,10 +82,10 @@ function useAutoExpandingFieldArray<T>({
 // Custom validation ensures filtered arrays are not empty
 const recipeSchema = z.object({
     name: z.string().min(1, 'Recipe name is required').max(200, 'Name is too long'),
-    prepTime: z.coerce.string(),
-    cookTime: z.coerce.string(),
-    totalTime: z.coerce.string(),
-    servings: z.coerce.string(),
+    prepTime: z.coerce.string().optional(),
+    cookTime: z.coerce.string().optional(),
+    totalTime: z.coerce.string().optional(),
+    servings: z.coerce.string().optional(),
     previewUrl: z.union([z.string().url(), z.literal('')]).optional(),
     source: z.union([z.string().url(), z.literal('')]).optional(),
     tags: z.array(z.string()),
