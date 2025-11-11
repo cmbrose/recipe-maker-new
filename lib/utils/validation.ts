@@ -15,10 +15,10 @@ export const IngredientGroupSchema = z.object({
  */
 export const CreateRecipeSchema = z.object({
   name: z.string().min(1, 'Recipe name is required'),
-  prepTime: z.number().int().positive().optional(),
-  cookTime: z.number().int().positive().optional(),
-  totalTime: z.number().int().positive().optional(),
-  servings: z.number().int().positive().optional(),
+  prepTime: z.string().optional(),
+  cookTime: z.string().optional(),
+  totalTime: z.string().optional(),
+  servings: z.string().optional(),
   ingredients: z.array(IngredientGroupSchema).min(1, 'At least one ingredient group is required'),
   directions: z.array(z.string().min(1)).min(1, 'At least one direction is required'),
   previewUrl: z.url().optional().or(z.literal('')),
