@@ -2,6 +2,7 @@
 // Maps domains to their respective scrapers
 
 import type { ScraperConfig } from '@/types/scraper';
+import { scrapeAllRecipes } from './allrecipes';
 import { scrapeBudgetBytes } from './budget-bytes';
 import { scrapeSkinnyTaste } from './skinny-taste';
 import { scrapeHalfBakedHarvest } from './half-baked-harvest';
@@ -15,6 +16,11 @@ import { scrapeYummyToddlerFood } from './yummy-toddler-food';
  * Registry of all supported recipe scrapers
  */
 export const SCRAPERS: ScraperConfig[] = [
+  {
+    domain: 'allrecipes.com',
+    name: 'AllRecipes',
+    parser: scrapeAllRecipes,
+  },
   {
     domain: 'budgetbytes.com',
     name: 'Budget Bytes',
