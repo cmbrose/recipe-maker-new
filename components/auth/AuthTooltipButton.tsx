@@ -1,8 +1,8 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { signIn } from 'next-auth/react';
-import { Lock } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 
@@ -10,7 +10,6 @@ interface AuthTooltipButtonProps extends ButtonProps {
   message: string;
   children: ReactNode;
   containerClassName?: string;
-  showSignInLink?: boolean;
 }
 
 export function AuthTooltipButton({
@@ -18,35 +17,44 @@ export function AuthTooltipButton({
   children,
   className,
   containerClassName,
-  showSignInLink = true,
   ...buttonProps
 }: AuthTooltipButtonProps) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 640px)').matches : false,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 640px)');
+    const updateIsMobile = () => setIsMobile(mediaQuery.matches);
+
+    updateIsMobile();
+    mediaQuery.addEventListener('change', updateIsMobile);
+    return () => mediaQuery.removeEventListener('change', updateIsMobile);
+  }, []);
+
+  const handleClick = useCallback(() => {
+    if (!isMobile) return;
+
+    toast(message, {
+      action: {
+        label: 'Sign in',
+        onClick: () => signIn('google'),
+      },
+    });
+  }, [isMobile, message]);
+
   return (
-    <div className={cn('flex flex-col items-end gap-2 sm:flex-row sm:items-center', containerClassName)}>
+    <div className={cn('flex flex-col items-end sm:flex-row sm:items-center', containerClassName)}>
       <Button
         {...buttonProps}
-        disabled
+        type="button"
         aria-disabled={true}
-        title={message}
-        className={cn('pointer-events-none', className)}
+        title={!isMobile ? message : undefined}
+        onClick={handleClick}
+        className={cn('cursor-not-allowed opacity-70', className)}
       >
         {children}
       </Button>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground sm:hidden">
-        <Lock className="h-3 w-3" aria-hidden="true" />
-        <span>{message}</span>
-      </div>
-      {showSignInLink ? (
-        <Button
-          type="button"
-          variant="link"
-          size="sm"
-          className="h-auto px-0 text-sm"
-          onClick={() => signIn('google')}
-        >
-          Sign in
-        </Button>
-      ) : null}
     </div>
   );
 }
