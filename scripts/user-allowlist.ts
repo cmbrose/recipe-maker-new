@@ -1,8 +1,14 @@
 #!/usr/bin/env tsx
 
-import { addEmailToAllowlist } from '../lib/auth/allowlist';
+import path from 'path';
+import { config as loadEnv } from 'dotenv';
 
 async function main() {
+  // Ensure environment variables are loaded before touching the database
+  const envPath = path.resolve(process.cwd(), '.env');
+  loadEnv({ path: envPath });
+
+  const { addEmailToAllowlist } = await import('../lib/auth/allowlist');
   const [command, email] = process.argv.slice(2);
 
   if (command !== 'add' || !email) {
