@@ -9,6 +9,7 @@ A modern recipe organization and meal planning application built with TypeScript
 - 🏷️ **Tag-Based Organization**: Categorize and filter recipes with tags
 - 📋 **Menu Planning**: Create meal plans and collections of recipes
 - 🔍 **Advanced Search**: Find recipes with powerful query syntax
+- 🔐 **Google OAuth Authentication**: Secure authentication for write operations
 - ⚡ **Real-time Updates**: Collaborative editing with live updates (planned)
 - 📱 **Responsive Design**: Works seamlessly on desktop and mobile
 
@@ -144,6 +145,36 @@ COSMOS_DB_CONNECTION_STRING="mongodb://localhost:27017/recipe-maker-dev"
 
 1. Install [Azure Cosmos DB Emulator](https://learn.microsoft.com/en-us/azure/cosmos-db/local-emulator)
 2. Use the emulator connection string in `.env.local`
+
+## Authentication Setup
+
+The application uses Google OAuth for authentication. Write operations (create, update, delete) require authentication, while read operations are public.
+
+### Quick Setup
+
+1. Follow the detailed instructions in [GOOGLE_OAUTH_SETUP.md](GOOGLE_OAUTH_SETUP.md)
+2. Add your Google OAuth credentials to `.env`:
+   ```env
+   GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+   GOOGLE_CLIENT_SECRET="your-client-secret"
+   AUTH_SECRET="generate-with-openssl-rand-base64-32"
+   ```
+
+### Protected Operations
+
+**Recipes:**
+- Create (manual) ✅ Auth Required
+- Update ✅ Auth Required
+- Delete ✅ Auth Required
+- Create from URL ⚠️ Public (special case)
+- View/List/Search ❌ Public
+
+**Menus:**
+- Create/Update/Delete ✅ Auth Required
+- Add/Remove/Reorder recipes ✅ Auth Required
+- View/List ❌ Public
+
+For detailed setup instructions, see [GOOGLE_OAUTH_SETUP.md](GOOGLE_OAUTH_SETUP.md).
 
 ## Supported Recipe Sites (Planned)
 

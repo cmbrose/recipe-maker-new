@@ -9,6 +9,7 @@ import {
   validationErrorResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
+import { requireAuth } from '@/lib/utils/auth';
 
 /**
  * GET /api/recipes
@@ -62,6 +63,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * Create a new recipe manually
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
+  // Require authentication
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   const body = await request.json();
 
   // Validate input

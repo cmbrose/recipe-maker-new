@@ -16,6 +16,7 @@ import {
   validationErrorResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
+import { requireAuth } from '@/lib/utils/auth';
 
 interface RouteParams {
   params: Promise<{
@@ -49,6 +50,10 @@ export const GET = withErrorHandling(
  */
 export const PUT = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
+    // Require authentication
+    const authError = await requireAuth();
+    if (authError) return authError;
+
     const { id } = await params;
     const body = await request.json();
 
@@ -81,6 +86,10 @@ export const PUT = withErrorHandling(
  */
 export const DELETE = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
+    // Require authentication
+    const authError = await requireAuth();
+    if (authError) return authError;
+
     const { id } = await params;
     // Check if recipe exists
     const existing = await getRecipe(id);
