@@ -11,12 +11,15 @@ import { Button } from '@/components/ui/button';
 import { Plus, Link as LinkIcon } from 'lucide-react';
 import { parseTagsFromUrl } from '@/lib/utils/tag-url';
 import type { RecipeFilters } from '@/types/recipe';
+import { useSession } from 'next-auth/react';
+import { AuthTooltipButton } from '@/components/auth/AuthTooltipButton';
 
 function RecipesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  const { status } = useSession();
   const [filters, setFilters] = useState<RecipeFilters>({});
   const { 
     data, 
@@ -90,12 +93,19 @@ function RecipesContent() {
               From URL
             </Button>
           </Link>
-          <Link href="/recipes/new">
-            <Button>
+          {status === 'authenticated' ? (
+            <Link href="/recipes/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Recipe
+              </Button>
+            </Link>
+          ) : (
+            <AuthTooltipButton message="Sign in to create recipes">
               <Plus className="h-4 w-4 mr-2" />
               New Recipe
-            </Button>
-          </Link>
+            </AuthTooltipButton>
+          )}
         </div>
       </div>
 

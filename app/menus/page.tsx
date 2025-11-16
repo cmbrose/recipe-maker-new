@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { AuthTooltipButton } from '@/components/auth/AuthTooltipButton';
 
 export default function MenusPage() {
   const { data, isLoading, error } = useMenus();
+  const { status } = useSession();
 
   if (isLoading) {
     return (
@@ -42,20 +45,40 @@ export default function MenusPage() {
             {menus.length} menu{menus.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <Link href="/menus/new">
-          <Button>
+        {status === 'authenticated' ? (
+          <Link href="/menus/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Menu
+            </Button>
+          </Link>
+        ) : (
+          <AuthTooltipButton message="Sign in to create menus">
             <Plus className="h-4 w-4 mr-2" />
             New Menu
-          </Button>
-        </Link>
+          </AuthTooltipButton>
+        )}
       </div>
 
       {menus.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No menus yet.</p>
-          <Button asChild className="mt-4">
-            <Link href="/menus/new">Create your first menu</Link>
-          </Button>
+          {status === 'authenticated' ? (
+            <Button asChild className="mt-4">
+              <Link href="/menus/new">Create your first menu</Link>
+            </Button>
+          ) : (
+            <div className="mt-4">
+              <AuthTooltipButton
+                message="Sign in to create menus"
+                className="w-full"
+                containerClassName="items-center"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create your first menu
+              </AuthTooltipButton>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

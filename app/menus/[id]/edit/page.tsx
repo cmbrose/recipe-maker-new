@@ -7,6 +7,7 @@ import { MenuEditor, MenuFormValues } from '@/components/menus/MenuEditor';
 import { menuApi, recipeApi } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -94,26 +95,28 @@ export default function EditMenuPage({ params }: PageProps) {
     }
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-4xl">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold">Edit Menu</h1>
-                <p className="text-muted-foreground mt-2">
-                    Make changes to "{menu.name}"
-                </p>
-            </div>
+        <AuthGuard action="edit menus">
+            <div className="container mx-auto py-8 px-4 max-w-4xl">
+                <div className="mb-6">
+                    <h1 className="text-3xl font-bold">Edit Menu</h1>
+                    <p className="text-muted-foreground mt-2">
+                        Make changes to "{menu.name}"
+                    </p>
+                </div>
 
-            <MenuEditor
-                menu={menu}
-                recipes={menuRecipes}
-                availableRecipes={recipesData?.recipes || []}
-                onSave={async (data) => {
-                    await updateMutation.mutateAsync(data);
-                }}
-                onDelete={async () => {
-                    await deleteMutation.mutateAsync();
-                }}
-                isLoading={updateMutation.isPending || deleteMutation.isPending}
-            />
-        </div>
+                <MenuEditor
+                    menu={menu}
+                    recipes={menuRecipes}
+                    availableRecipes={recipesData?.recipes || []}
+                    onSave={async (data) => {
+                        await updateMutation.mutateAsync(data);
+                    }}
+                    onDelete={async () => {
+                        await deleteMutation.mutateAsync();
+                    }}
+                    isLoading={updateMutation.isPending || deleteMutation.isPending}
+                />
+            </div>
+        </AuthGuard>
     );
 }

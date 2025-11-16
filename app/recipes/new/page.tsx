@@ -6,6 +6,7 @@ import { RecipeEditor, type RecipeFormValues } from '@/components/recipes/Recipe
 import { recipeApi } from '@/lib/api/client';
 import type { IngredientGroup } from '@/types/recipe';
 import { toast } from 'sonner';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 
 export default function NewRecipePage() {
     const router = useRouter();
@@ -43,20 +44,22 @@ export default function NewRecipePage() {
     });
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-4xl">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold">Create New Recipe</h1>
-                <p className="text-muted-foreground mt-2">
-                    Enter the details of your recipe manually
-                </p>
-            </div>
+        <AuthGuard action="create recipes">
+            <div className="container mx-auto py-8 px-4 max-w-4xl">
+                <div className="mb-6">
+                    <h1 className="text-3xl font-bold">Create New Recipe</h1>
+                    <p className="text-muted-foreground mt-2">
+                        Enter the details of your recipe manually
+                    </p>
+                </div>
 
-            <RecipeEditor
-                onSave={async (data) => {
-                    await createMutation.mutateAsync(data);
-                }}
-                isLoading={createMutation.isPending}
-            />
-        </div>
+                <RecipeEditor
+                    onSave={async (data) => {
+                        await createMutation.mutateAsync(data);
+                    }}
+                    isLoading={createMutation.isPending}
+                />
+            </div>
+        </AuthGuard>
     );
 }

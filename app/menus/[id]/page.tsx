@@ -6,6 +6,8 @@ import { useMenu } from '@/lib/hooks/useMenus';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSession } from 'next-auth/react';
+import { AuthTooltipButton } from '@/components/auth/AuthTooltipButton';
 
 export default function MenuDetailPage({
   params,
@@ -14,6 +16,7 @@ export default function MenuDetailPage({
 }) {
   const { id } = use(params);
   const { data: menu, isLoading, error } = useMenu(id);
+  const { status } = useSession();
 
   if (isLoading) {
     return (
@@ -46,18 +49,36 @@ export default function MenuDetailPage({
             {menu.recipeIds.length} recipe{menu.recipeIds.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href={`/menus/${id}/edit`}>Edit</Link>
-        </Button>
+        {status === 'authenticated' ? (
+          <Button asChild variant="outline">
+            <Link href={`/menus/${id}/edit`}>Edit</Link>
+          </Button>
+        ) : (
+          <AuthTooltipButton message="Sign in to edit menus" variant="outline">
+            Edit
+          </AuthTooltipButton>
+        )}
       </div>
 
       {menu.recipeIds.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">No recipes in this menu yet.</p>
-            <Button asChild className="mt-4">
-              <Link href={`/menus/${id}/edit`}>Add Recipes</Link>
-            </Button>
+            {status === 'authenticated' ? (
+              <Button asChild className="mt-4">
+                <Link href={`/menus/${id}/edit`}>Add Recipes</Link>
+              </Button>
+            ) : (
+              <div className="mt-4">
+                <AuthTooltipButton
+                  message="Sign in to add recipes to this menu"
+                  className="w-full"
+                  containerClassName="items-center"
+                >
+                  Add Recipes
+                </AuthTooltipButton>
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : (

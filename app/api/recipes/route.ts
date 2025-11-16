@@ -9,6 +9,7 @@ import {
   validationErrorResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
+import { requireUserSession } from '@/lib/auth/session';
 
 /**
  * GET /api/recipes
@@ -62,6 +63,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * Create a new recipe manually
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
+  await requireUserSession();
   const body = await request.json();
 
   // Validate input

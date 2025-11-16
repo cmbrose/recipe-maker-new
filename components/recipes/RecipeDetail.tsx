@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ClickableTag } from '@/components/shared/ClickableTag';
+import { useSession } from 'next-auth/react';
+import { AuthTooltipButton } from '@/components/auth/AuthTooltipButton';
 
 interface RecipeDetailProps {
   id: string;
@@ -13,6 +15,7 @@ interface RecipeDetailProps {
 
 export function RecipeDetail({ id }: RecipeDetailProps) {
   const { data: recipe, isLoading, error } = useRecipe(id);
+  const { status } = useSession();
 
   if (isLoading) {
     return (
@@ -54,9 +57,15 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
               <span className="text-sm text-muted-foreground">No tags</span>
             )}
           </div>
-          <Button asChild variant="outline">
-            <Link href={`/recipes/${id}/edit`}>Edit</Link>
-          </Button>
+          {status === 'authenticated' ? (
+            <Button asChild variant="outline">
+              <Link href={`/recipes/${id}/edit`}>Edit</Link>
+            </Button>
+          ) : (
+            <AuthTooltipButton message="Sign in to edit recipes" variant="outline">
+              Edit
+            </AuthTooltipButton>
+          )}
         </div>
       </div>
 

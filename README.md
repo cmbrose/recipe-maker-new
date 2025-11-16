@@ -84,6 +84,17 @@ recipe-maker/
 
    > **Note:** Prisma CLI requires `.env` (not `.env.local`). See [ENV_SETUP.md](ENV_SETUP.md) for details.
 
+### Authentication
+
+Recipe Maker now requires Google OAuth for any write operations (creating, editing, or deleting recipes and menus). To enable authentication locally:
+
+1. Create an OAuth 2.0 Client ID in the [Google Cloud Console](https://console.cloud.google.com/).
+2. Set the authorized redirect URI to `http://localhost:3000/api/auth/callback/google`.
+3. Copy the Client ID and Client Secret into your `.env` file as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+4. Generate a random string (for example using `openssl rand -base64 32`) and set it as `NEXTAUTH_SECRET`.
+
+With these values in place, sign in from the navigation bar to gain access to recipe and menu write features. Read-only actions (viewing, listing, searching, and importing from a URL) continue to work without authentication.
+
 4. Generate Prisma client:
    ```bash
    pnpm db:generate

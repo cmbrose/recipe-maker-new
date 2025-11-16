@@ -13,6 +13,7 @@ import {
   validationErrorResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
+import { requireUserSession } from '@/lib/auth/session';
 
 interface RouteParams {
   params: Promise<{
@@ -34,6 +35,7 @@ const ReorderRecipesSchema = z.object({
  */
 export const POST = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
+    await requireUserSession();
     const { id } = await params;
     const body = await request.json();
 
@@ -61,6 +63,7 @@ export const POST = withErrorHandling(
  */
 export const PUT = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
+    await requireUserSession();
     const { id } = await params;
     const body = await request.json();
 

@@ -7,7 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { useRecipes } from '@/lib/hooks/useRecipes';
 import { Plus, Link as LinkIcon } from 'lucide-react';
-import type { Recipe } from '@/types/recipe';
+import { useSession } from 'next-auth/react';
+import { AuthTooltipButton } from '@/components/auth/AuthTooltipButton';
 
 export default function Home() {
   // Fetch recent recipes (limit 6, sorted by creation date desc)
@@ -15,6 +16,7 @@ export default function Home() {
     sort: 'created-desc',
     limit: 6
   });
+  const { status } = useSession();
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
@@ -33,9 +35,19 @@ export default function Home() {
             <CardDescription>Start with a blank recipe and add your own details</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full">
-              <Link href="/recipes/new">Create Recipe</Link>
-            </Button>
+            {status === 'authenticated' ? (
+              <Button asChild className="w-full">
+                <Link href="/recipes/new">Create Recipe</Link>
+              </Button>
+            ) : (
+              <AuthTooltipButton
+                message="Sign in to create recipes"
+                className="w-full"
+                containerClassName="items-start sm:items-center"
+              >
+                Create Recipe
+              </AuthTooltipButton>
+            )}
           </CardContent>
         </Card>
 
@@ -102,9 +114,18 @@ export default function Home() {
             <CardContent className="p-8 text-center">
               <p className="text-muted-foreground mb-4">No recipes yet! Get started by creating or importing your first recipe.</p>
               <div className="flex gap-4 justify-center">
-                <Button asChild>
-                  <Link href="/recipes/new">Create Recipe</Link>
-                </Button>
+                {status === 'authenticated' ? (
+                  <Button asChild>
+                    <Link href="/recipes/new">Create Recipe</Link>
+                  </Button>
+                ) : (
+                  <AuthTooltipButton
+                    message="Sign in to create recipes"
+                    containerClassName="items-center"
+                  >
+                    Create Recipe
+                  </AuthTooltipButton>
+                )}
                 <Button asChild variant="outline">
                   <Link href="/recipes/new/from-url">Import Recipe</Link>
                 </Button>
