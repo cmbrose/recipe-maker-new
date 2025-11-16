@@ -82,12 +82,15 @@ export function AuthButton({
   );
 
   // Only show tooltip when disabled due to auth
+  // Wrap in span because disabled buttons don't trigger pointer events
   if (shouldDisable) {
     return (
       <TooltipProvider>
-        <Tooltip>
+        <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
-            {button}
+            <span className="inline-flex">
+              {button}
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>Sign in to create and edit recipes</p>
