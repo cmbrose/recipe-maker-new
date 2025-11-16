@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { useRecipe } from '@/lib/hooks/useRecipes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,7 @@ interface RecipeDetailProps {
 }
 
 export function RecipeDetail({ id }: RecipeDetailProps) {
+  const { data: session } = useSession();
   const { data: recipe, isLoading, error } = useRecipe(id);
 
   if (isLoading) {
@@ -54,9 +56,11 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
               <span className="text-sm text-muted-foreground">No tags</span>
             )}
           </div>
-          <Button asChild variant="outline">
-            <Link href={`/recipes/${id}/edit`}>Edit</Link>
-          </Button>
+          {session && (
+            <Button asChild variant="outline">
+              <Link href={`/recipes/${id}/edit`}>Edit</Link>
+            </Button>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { useMenus } from '@/lib/hooks/useMenus';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Plus } from 'lucide-react';
 
 export default function MenusPage() {
+  const { data: session } = useSession();
   const { data, isLoading, error } = useMenus();
 
   if (isLoading) {
@@ -42,20 +44,24 @@ export default function MenusPage() {
             {menus.length} menu{menus.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <Link href="/menus/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Menu
-          </Button>
-        </Link>
+        {session && (
+          <Link href="/menus/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Menu
+            </Button>
+          </Link>
+        )}
       </div>
 
       {menus.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No menus yet.</p>
-          <Button asChild className="mt-4">
-            <Link href="/menus/new">Create your first menu</Link>
-          </Button>
+          {session && (
+            <Button asChild className="mt-4">
+              <Link href="/menus/new">Create your first menu</Link>
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

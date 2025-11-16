@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MenuEditor, type MenuFormValues } from '@/components/menus/MenuEditor';
 import { menuApi, recipeApi } from '@/lib/api/client';
+import { RequireAuth } from '@/components/auth/RequireAuth';
 import { toast } from 'sonner';
 
 export default function NewMenuPage() {
@@ -36,21 +37,23 @@ export default function NewMenuPage() {
     });
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-4xl">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold">Create New Menu</h1>
-                <p className="text-muted-foreground mt-2">
-                    Create a collection of recipes for meal planning
-                </p>
-            </div>
+        <RequireAuth>
+            <div className="container mx-auto py-8 px-4 max-w-4xl">
+                <div className="mb-6">
+                    <h1 className="text-3xl font-bold">Create New Menu</h1>
+                    <p className="text-muted-foreground mt-2">
+                        Create a collection of recipes for meal planning
+                    </p>
+                </div>
 
-            <MenuEditor
-                availableRecipes={recipesData?.recipes || []}
-                onSave={async (data) => {
-                    await createMutation.mutateAsync(data);
-                }}
-                isLoading={createMutation.isPending}
-            />
-        </div>
+                <MenuEditor
+                    availableRecipes={recipesData?.recipes || []}
+                    onSave={async (data) => {
+                        await createMutation.mutateAsync(data);
+                    }}
+                    isLoading={createMutation.isPending}
+                />
+            </div>
+        </RequireAuth>
     );
 }

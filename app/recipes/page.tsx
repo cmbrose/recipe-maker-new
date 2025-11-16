@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { RecipeList } from '@/components/recipes/RecipeList';
 import { RecipeSearch } from '@/components/recipes/RecipeSearch';
@@ -13,6 +14,7 @@ import { parseTagsFromUrl } from '@/lib/utils/tag-url';
 import type { RecipeFilters } from '@/types/recipe';
 
 function RecipesContent() {
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -90,12 +92,14 @@ function RecipesContent() {
               From URL
             </Button>
           </Link>
-          <Link href="/recipes/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Recipe
-            </Button>
-          </Link>
+          {session && (
+            <Link href="/recipes/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Recipe
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
