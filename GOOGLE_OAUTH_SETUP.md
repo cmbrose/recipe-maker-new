@@ -61,17 +61,43 @@ This application uses Google OAuth for authentication. Follow these steps to con
    AUTH_SECRET="your-generated-secret"
    ```
 
-### 5. Test the Authentication
+### 5. Configure Email Allowlist
+
+The application uses an email allowlist stored in Cosmos DB. Only users whose emails are in the allowlist can sign in.
+
+**Add your email to the allowlist:**
+
+```bash
+pnpm tsx scripts/manage-allowlist.ts add your-email@example.com
+```
+
+**Other allowlist commands:**
+
+```bash
+# List all allowed emails
+pnpm tsx scripts/manage-allowlist.ts list
+
+# Remove an email
+pnpm tsx scripts/manage-allowlist.ts remove user@example.com
+```
+
+**Important Notes:**
+- The allowlist is checked **only during sign-in**
+- Once a user is signed in with a valid session cookie, their access is not re-verified
+- Removing an email from the allowlist will not kick out already signed-in users
+- Users must sign out and back in for allowlist changes to take effect
+
+### 6. Test the Authentication
 
 1. Start the development server:
    ```bash
-   npm run dev
+   pnpm dev
    ```
 
 2. Navigate to `http://localhost:3000`
 3. Click the **Sign In** button in the navigation bar
 4. You should be redirected to Google's OAuth consent screen
-5. Sign in with your Google account
+5. Sign in with your Google account (must be in the allowlist)
 6. After successful authentication, you'll be redirected back to the application
 
 ## Authentication Requirements
