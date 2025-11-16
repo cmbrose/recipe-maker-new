@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
 import { useRecipe } from '@/lib/hooks/useRecipes';
+import { AuthButton } from '@/components/auth/AuthButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,7 +13,6 @@ interface RecipeDetailProps {
 }
 
 export function RecipeDetail({ id }: RecipeDetailProps) {
-  const { data: session } = useSession();
   const { data: recipe, isLoading, error } = useRecipe(id);
 
   if (isLoading) {
@@ -56,11 +55,9 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
               <span className="text-sm text-muted-foreground">No tags</span>
             )}
           </div>
-          {session && (
-            <Button asChild variant="outline">
-              <Link href={`/recipes/${id}/edit`}>Edit</Link>
-            </Button>
-          )}
+          <AuthButton href={`/recipes/${id}/edit`} variant="outline">
+            Edit
+          </AuthButton>
         </div>
       </div>
 

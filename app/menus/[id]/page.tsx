@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { use } from 'react';
-import { useSession } from 'next-auth/react';
 import { useMenu } from '@/lib/hooks/useMenus';
+import { AuthButton } from '@/components/auth/AuthButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,7 +14,6 @@ export default function MenuDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { data: session } = useSession();
   const { data: menu, isLoading, error } = useMenu(id);
 
   if (isLoading) {
@@ -48,22 +47,18 @@ export default function MenuDetailPage({
             {menu.recipeIds.length} recipe{menu.recipeIds.length !== 1 ? 's' : ''}
           </p>
         </div>
-        {session && (
-          <Button asChild variant="outline">
-            <Link href={`/menus/${id}/edit`}>Edit</Link>
-          </Button>
-        )}
+        <AuthButton href={`/menus/${id}/edit`} variant="outline">
+          Edit
+        </AuthButton>
       </div>
 
       {menu.recipeIds.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">No recipes in this menu yet.</p>
-            {session && (
-              <Button asChild className="mt-4">
-                <Link href={`/menus/${id}/edit`}>Add Recipes</Link>
-              </Button>
-            )}
+            <AuthButton href={`/menus/${id}/edit`} className="mt-4">
+              Add Recipes
+            </AuthButton>
           </CardContent>
         </Card>
       ) : (
