@@ -73,18 +73,14 @@ export async function listRecipes(filters: RecipeFilters = {}): Promise<RecipeLi
   const skip = (page - 1) * limit;
   const collection = await getRecipesCollection();
   
-  let docs: any[];
-  let total: number;
+  // Cosmos DB doesn't have indexes for sorting fields, so we do client-side sorting
+  // Fetch all matching documents
+  const allDocs = await collection.find(query).toArray();
+  const total = allDocs.length;
   
-  // For 'viewed' sort, we need to handle null/undefined lastViewed values
-  // Cosmos DB doesn't have an index for lastViewed, so we'll do client-side sorting
-  if (sortField === 'viewed') {
-    // Fetch all matching documents (within reasonable limits)
-    const allDocs = await collection.find(query).toArray();
-    total = allDocs.length;
-    
-    // Sort in memory: viewed recipes first (sorted by lastViewed), then unviewed recipes (sorted by createdAt)
-    allDocs.sort((a, b) => {
+  // Sort in memory based on the requested field
+  allDocs.sort((a, b) => {
+    if (sortField === 'viewed') {
       const aViewed = a.lastViewed;
       const bViewed = b.lastViewed;
       
@@ -110,25 +106,18 @@ export async function listRecipes(filters: RecipeFilters = {}): Promise<RecipeLi
       
       // Neither has lastViewed - sort by createdAt desc
       return b.createdAt.getTime() - a.createdAt.getTime();
-    });
-    
-    // Apply pagination
-    docs = allDocs.slice(skip, skip + limit);
-  } else {
-    // For other sorts, use database sorting (which has indexes)
-    const sortObj: any = {};
-    if (sortField === 'name') {
-      sortObj.name = sortDirection === 'asc' ? 1 : -1;
+    } else if (sortField === 'name') {
+      const comparison = a.name.localeCompare(b.name);
+      return sortDirection === 'asc' ? comparison : -comparison;
     } else {
       // Default to createdAt
-      sortObj.createdAt = sortDirection === 'asc' ? 1 : -1;
+      const diff = b.createdAt.getTime() - a.createdAt.getTime(); // desc order
+      return sortDirection === 'asc' ? -diff : diff;
     }
-    
-    [docs, total] = await Promise.all([
-      collection.find(query).sort(sortObj).skip(skip).limit(limit).toArray(),
-      collection.countDocuments(query),
-    ]);
-  }
+  });
+  
+  // Apply pagination
+  const docs = allDocs.slice(skip, skip + limit);
   const totalPages = Math.ceil(total / limit);
   return {
     recipes: docs.map((doc) => toRecipe(doc)),
