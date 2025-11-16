@@ -69,26 +69,66 @@ export async function listRecipes(filters: RecipeFilters = {}): Promise<RecipeLi
 
   // Sorting
   const [sortField, sortDirection] = sort.split('-') as [string, 'asc' | 'desc'];
-  const sortObj: any = {};
-  switch (sortField) {
-    case 'name':
-      sortObj.name = sortDirection === 'asc' ? 1 : -1;
-      break;
-    case 'viewed':
-      sortObj.lastViewed = sortDirection === 'asc' ? 1 : -1;
-      break;
-    case 'created':
-    default:
-      sortObj.createdAt = sortDirection === 'asc' ? 1 : -1;
-      break;
-  }
-
+  
   const skip = (page - 1) * limit;
   const collection = await getRecipesCollection();
-  const [docs, total] = await Promise.all([
-    collection.find(query).sort(sortObj).skip(skip).limit(limit).toArray(),
-    collection.countDocuments(query),
-  ]);
+  
+  let docs: any[];
+  let total: number;
+  
+  // For 'viewed' sort, we need to handle null/undefined lastViewed values
+  // Cosmos DB doesn't have an index for lastViewed, so we'll do client-side sorting
+  if (sortField === 'viewed') {
+    // Fetch all matching documents (within reasonable limits)
+    const allDocs = await collection.find(query).toArray();
+    total = allDocs.length;
+    
+    // Sort in memory: viewed recipes first (sorted by lastViewed), then unviewed recipes (sorted by createdAt)
+    allDocs.sort((a, b) => {
+      const aViewed = a.lastViewed;
+      const bViewed = b.lastViewed;
+      
+      // Both have lastViewed - sort by lastViewed
+      if (aViewed && bViewed) {
+        const diff = bViewed.getTime() - aViewed.getTime(); // desc order
+        return sortDirection === 'asc' ? -diff : diff;
+      }
+      
+      // Only a has lastViewed
+      // - For desc: viewed recipes come first (a before b)
+      // - For asc: unviewed recipes come first (b before a)
+      if (aViewed && !bViewed) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+      
+      // Only b has lastViewed
+      // - For desc: viewed recipes come first (b before a)
+      // - For asc: unviewed recipes come first (a before b)
+      if (!aViewed && bViewed) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      
+      // Neither has lastViewed - sort by createdAt desc
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+    
+    // Apply pagination
+    docs = allDocs.slice(skip, skip + limit);
+  } else {
+    // For other sorts, use database sorting (which has indexes)
+    const sortObj: any = {};
+    if (sortField === 'name') {
+      sortObj.name = sortDirection === 'asc' ? 1 : -1;
+    } else {
+      // Default to createdAt
+      sortObj.createdAt = sortDirection === 'asc' ? 1 : -1;
+    }
+    
+    [docs, total] = await Promise.all([
+      collection.find(query).sort(sortObj).skip(skip).limit(limit).toArray(),
+      collection.countDocuments(query),
+    ]);
+  }
   const totalPages = Math.ceil(total / limit);
   return {
     recipes: docs.map((doc) => toRecipe(doc)),
