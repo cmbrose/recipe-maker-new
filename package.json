@@ -9,7 +9,10 @@
     "lint": "eslint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "db:seed": "tsx scripts/seed-db.ts"
+    "db:seed": "tsx scripts/seed-db.ts",
+    "user:add": "tsx scripts/manage-allowlist.ts add",
+    "user:remove": "tsx scripts/manage-allowlist.ts remove",
+    "user:list": "tsx scripts/manage-allowlist.ts list"
   },
   "dependencies": {
     "@azure/monitor-opentelemetry": "^1.14.0",

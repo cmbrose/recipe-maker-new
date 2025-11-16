@@ -68,17 +68,17 @@ The application uses an email allowlist stored in Cosmos DB. Only users whose em
 **Add your email to the allowlist:**
 
 ```bash
-pnpm tsx scripts/manage-allowlist.ts add your-email@example.com
+pnpm user:add your-email@example.com
 ```
 
 **Other allowlist commands:**
 
 ```bash
 # List all allowed emails
-pnpm tsx scripts/manage-allowlist.ts list
+pnpm user:list
 
 # Remove an email
-pnpm tsx scripts/manage-allowlist.ts remove user@example.com
+pnpm user:remove user@example.com
 ```
 
 **Important Notes:**
