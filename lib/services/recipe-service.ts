@@ -69,26 +69,55 @@ export async function listRecipes(filters: RecipeFilters = {}): Promise<RecipeLi
 
   // Sorting
   const [sortField, sortDirection] = sort.split('-') as [string, 'asc' | 'desc'];
-  const sortObj: any = {};
-  switch (sortField) {
-    case 'name':
-      sortObj.name = sortDirection === 'asc' ? 1 : -1;
-      break;
-    case 'viewed':
-      sortObj.lastViewed = sortDirection === 'asc' ? 1 : -1;
-      break;
-    case 'created':
-    default:
-      sortObj.createdAt = sortDirection === 'asc' ? 1 : -1;
-      break;
-  }
-
+  
   const skip = (page - 1) * limit;
   const collection = await getRecipesCollection();
-  const [docs, total] = await Promise.all([
-    collection.find(query).sort(sortObj).skip(skip).limit(limit).toArray(),
-    collection.countDocuments(query),
-  ]);
+  
+  // Cosmos DB doesn't have indexes for sorting fields, so we do client-side sorting
+  // Fetch all matching documents
+  const allDocs = await collection.find(query).toArray();
+  const total = allDocs.length;
+  
+  // Sort in memory based on the requested field
+  allDocs.sort((a, b) => {
+    if (sortField === 'viewed') {
+      const aViewed = a.lastViewed;
+      const bViewed = b.lastViewed;
+      
+      // Both have lastViewed - sort by lastViewed
+      if (aViewed && bViewed) {
+        const diff = bViewed.getTime() - aViewed.getTime(); // desc order
+        return sortDirection === 'asc' ? -diff : diff;
+      }
+      
+      // Only a has lastViewed
+      // - For desc: viewed recipes come first (a before b)
+      // - For asc: unviewed recipes come first (b before a)
+      if (aViewed && !bViewed) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+      
+      // Only b has lastViewed
+      // - For desc: viewed recipes come first (b before a)
+      // - For asc: unviewed recipes come first (a before b)
+      if (!aViewed && bViewed) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      
+      // Neither has lastViewed - sort by createdAt desc
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    } else if (sortField === 'name') {
+      const comparison = a.name.localeCompare(b.name);
+      return sortDirection === 'asc' ? comparison : -comparison;
+    } else {
+      // Default to createdAt
+      const diff = b.createdAt.getTime() - a.createdAt.getTime(); // desc order
+      return sortDirection === 'asc' ? -diff : diff;
+    }
+  });
+  
+  // Apply pagination
+  const docs = allDocs.slice(skip, skip + limit);
   const totalPages = Math.ceil(total / limit);
   return {
     recipes: docs.map((doc) => toRecipe(doc)),
