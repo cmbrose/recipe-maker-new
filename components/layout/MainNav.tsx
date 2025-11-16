@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +14,7 @@ const navItems = [
 
 export function MainNav() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
 
   return (
     <header className="border-b">
@@ -37,6 +39,24 @@ export function MainNav() {
               </Link>
             ))}
           </nav>
+        </div>
+        <div className="flex items-center gap-3">
+          {status === 'loading' ? (
+            <span className="text-sm text-muted-foreground">Checking auth…</span>
+          ) : session ? (
+            <>
+              <span className="hidden text-sm text-muted-foreground sm:inline-flex">
+                {session.user?.name || session.user?.email}
+              </span>
+              <Button variant="outline" size="sm" type="button" onClick={() => signOut()}>
+                Sign out
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" type="button" onClick={() => signIn('google')}>
+              Sign in
+            </Button>
+          )}
         </div>
       </div>
     </header>

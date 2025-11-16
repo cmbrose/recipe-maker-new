@@ -7,6 +7,7 @@ import {
   errorResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
+import { requireUserSession } from '@/lib/auth/session';
 
 interface RouteParams {
   params: Promise<{
@@ -21,6 +22,7 @@ interface RouteParams {
  */
 export const DELETE = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
+    await requireUserSession();
     const { id, recipeId } = await params;
     try {
       const menu = await removeRecipeFromMenu(id, recipeId);

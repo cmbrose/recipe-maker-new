@@ -15,6 +15,7 @@ import {
   validationErrorResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
+import { requireUserSession } from '@/lib/auth/session';
 
 interface RouteParams {
   params: Promise<{
@@ -45,6 +46,7 @@ export const GET = withErrorHandling(
  */
 export const PUT = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
+    await requireUserSession();
     const { id } = await params;
     const body = await request.json();
 
@@ -71,6 +73,7 @@ export const PUT = withErrorHandling(
  */
 export const DELETE = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
+    await requireUserSession();
     const { id } = await params;
     // Delete menu (will throw if not found)
     await deleteMenu(id);

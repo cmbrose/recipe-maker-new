@@ -6,6 +6,7 @@ import {
   successResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
+import { requireUserSession } from '@/lib/auth/session';
 
 interface RouteParams {
   params: Promise<{
@@ -19,6 +20,7 @@ interface RouteParams {
  */
 export const POST = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
+    await requireUserSession();
     const { id } = await params;
     const menu = await clearMenu(id);
     return successResponse(menu);

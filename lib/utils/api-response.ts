@@ -3,6 +3,13 @@
 import { NextResponse } from 'next/server';
 import { z, core } from 'zod';
 
+export class UnauthorizedError extends Error {
+  constructor(message = 'You must be signed in to perform this action') {
+    super(message);
+    this.name = 'UnauthorizedError';
+  }
+}
+
 /**
  * Standard API error response
  */
@@ -70,6 +77,14 @@ export function notFoundResponse(resource: string, id?: string): NextResponse {
   return errorResponse('Not Found', message, 404);
 }
 
+export function unauthorizedResponse(message?: string): NextResponse {
+  return errorResponse(
+    'Unauthorized',
+    message || 'You must be signed in to perform this action',
+    401
+  );
+}
+
 /**
  * Handle server errors
  */
@@ -96,6 +111,10 @@ export function withErrorHandling<T extends unknown[]>(
     } catch (error) {
       if (error instanceof z.ZodError) {
         return validationErrorResponse(error);
+      }
+
+      if (error instanceof UnauthorizedError) {
+        return unauthorizedResponse(error.message);
       }
 
       if (error instanceof Error) {

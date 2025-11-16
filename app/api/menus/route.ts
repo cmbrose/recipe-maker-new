@@ -9,6 +9,7 @@ import {
   validationErrorResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
+import { requireUserSession } from '@/lib/auth/session';
 
 /**
  * GET /api/menus
@@ -24,6 +25,7 @@ export const GET = withErrorHandling(async () => {
  * Create a new menu
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
+  await requireUserSession();
   const body = await request.json();
 
   // Validate input
