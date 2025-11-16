@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { signIn } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Button, type ButtonProps } from '@/components/ui/button';
@@ -43,18 +43,29 @@ export function AuthTooltipButton({
     });
   }, [isMobile, message]);
 
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const showTooltip = useMemo(() => !isMobile && isTooltipVisible, [isMobile, isTooltipVisible]);
+
   return (
-    <div className={cn('flex flex-col items-end sm:flex-row sm:items-center', containerClassName)}>
+    <div className={cn('relative inline-flex flex-col items-end sm:flex-row sm:items-center', containerClassName)}>
       <Button
         {...buttonProps}
         type="button"
         aria-disabled={true}
-        title={!isMobile ? message : undefined}
         onClick={handleClick}
-        className={cn('cursor-not-allowed opacity-70', className)}
+        onMouseEnter={() => setIsTooltipVisible(true)}
+        onMouseLeave={() => setIsTooltipVisible(false)}
+        onFocus={() => setIsTooltipVisible(true)}
+        onBlur={() => setIsTooltipVisible(false)}
+        className={cn('opacity-70', className)}
       >
         {children}
       </Button>
+      {showTooltip ? (
+        <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 transform whitespace-nowrap rounded-xl border border-border bg-popover/95 px-4 py-2 text-sm text-foreground shadow-lg shadow-black/10 ring-1 ring-black/5 backdrop-blur-md">
+          {message}
+        </div>
+      ) : null}
     </div>
   );
 }

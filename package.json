@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "user:add": "pnpm exec tsx scripts/user-allowlist.ts add"
   },
   "dependencies": {
     "@azure/monitor-opentelemetry": "^1.14.0",

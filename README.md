@@ -95,6 +95,16 @@ Recipe Maker now requires Google OAuth for any write operations (creating, editi
 
 With these values in place, sign in from the navigation bar to gain access to recipe and menu write features. Read-only actions (viewing, listing, searching, and importing from a URL) continue to work without authentication.
 
+#### Email allow list
+
+Only allowlisted Google accounts may sign in. Allowed emails are stored in Cosmos DB (Mongo API) in the `UserAllowlist` collection and are checked during the sign-in callback. Once a user signs in successfully, their session remains valid until it expires, even if they are later removed from the allow list.
+
+Add users with the helper script:
+
+```bash
+pnpm user:add someone@example.com
+```
+
 4. Generate Prisma client:
    ```bash
    pnpm db:generate
@@ -126,6 +136,7 @@ The app will automatically reload when you make changes.
 - `pnpm db:generate` - Generate Prisma client
 - `pnpm db:push` - Push schema to database
 - `pnpm db:studio` - Open Prisma Studio (database GUI)
+- `pnpm user:add <email>` - Add a Google account to the sign-in allow list
 
 ## Database Setup
 
