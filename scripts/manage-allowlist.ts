@@ -2,11 +2,23 @@
  * CLI script to manage the email allowlist
  *
  * Usage:
- *   pnpm tsx scripts/manage-allowlist.ts list
- *   pnpm tsx scripts/manage-allowlist.ts add user@example.com
- *   pnpm tsx scripts/manage-allowlist.ts remove user@example.com
+ *   pnpm user:add user@example.com
+ *   pnpm user:remove user@example.com
+ *   pnpm user:list
  */
 
+import { config } from 'dotenv';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// For ESM compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables from .env file BEFORE importing modules that need them
+config({ path: resolve(__dirname, '../.env') });
+
+// Now we can import modules that depend on env vars
 import { addAllowedEmail, removeAllowedEmail, getAllowedEmails } from '../lib/services/user-service';
 
 async function main() {
@@ -29,7 +41,7 @@ async function main() {
     case 'add':
       if (!email) {
         console.error('Error: Email address required');
-        console.log('Usage: pnpm tsx scripts/manage-allowlist.ts add user@example.com');
+        console.log('Usage: pnpm user:add user@example.com');
         process.exit(1);
       }
       await addAllowedEmail(email);
@@ -39,7 +51,7 @@ async function main() {
     case 'remove':
       if (!email) {
         console.error('Error: Email address required');
-        console.log('Usage: pnpm tsx scripts/manage-allowlist.ts remove user@example.com');
+        console.log('Usage: pnpm user:remove user@example.com');
         process.exit(1);
       }
       await removeAllowedEmail(email);
@@ -50,9 +62,9 @@ async function main() {
       console.log('Email Allowlist Management');
       console.log('');
       console.log('Usage:');
-      console.log('  pnpm tsx scripts/manage-allowlist.ts list');
-      console.log('  pnpm tsx scripts/manage-allowlist.ts add user@example.com');
-      console.log('  pnpm tsx scripts/manage-allowlist.ts remove user@example.com');
+      console.log('  pnpm user:list');
+      console.log('  pnpm user:add user@example.com');
+      console.log('  pnpm user:remove user@example.com');
       console.log('');
       process.exit(1);
   }
