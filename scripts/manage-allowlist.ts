@@ -18,13 +18,13 @@ const __dirname = dirname(__filename);
 // Load environment variables from .env file BEFORE importing modules that need them
 config({ path: resolve(__dirname, '../.env') });
 
-// Now we can import modules that depend on env vars
-import { addAllowedEmail, removeAllowedEmail, getAllowedEmails } from '../lib/services/user-service';
-
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
   const email = args[1];
+
+  // Now we can import modules that depend on env vars
+  const { addAllowedEmail, removeAllowedEmail, getAllowedEmails } = await import('../lib/services/user-service');
 
   switch (command) {
     case 'list':
