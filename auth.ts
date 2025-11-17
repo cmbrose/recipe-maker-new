@@ -19,9 +19,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60,   // Update session every 24 hours
   },
-  // trustHost is needed for development with localhost
-  // In production, ensure AUTH_URL is set to your domain (e.g., https://brose-recipes.com)
-  trustHost: true,
   callbacks: {
     async signIn({ user, account, profile }) {
       // Check if user's email is in the allowlist

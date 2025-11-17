@@ -277,8 +277,9 @@ All environment variables are set automatically by the deployment workflow:
 | `AUTH_SECRET` | GitHub Secret | NextAuth session encryption |
 | `GOOGLE_CLIENT_ID` | GitHub Secret | Google OAuth Client ID |
 | `GOOGLE_CLIENT_SECRET` | GitHub Secret | Google OAuth Client Secret |
+| `AUTH_URL` | Set by workflow | Production URL (`https://brose-recipes.com`) |
 
-All values are stored as **Container App secrets** (encrypted at rest) and referenced with `secretref:` in environment variables.
+Secrets (`AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) are stored as **Container App secrets** (encrypted at rest) and referenced with `secretref:` in environment variables.
 
 ---
 
