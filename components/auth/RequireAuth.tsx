@@ -24,6 +24,7 @@ export function RequireAuth({ children, redirectTo = '/' }: RequireAuthProps) {
     }
   }, [status, router, redirectTo]);
 
+  // Show loading skeleton while checking authentication
   if (status === 'loading') {
     return (
       <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -37,7 +38,9 @@ export function RequireAuth({ children, redirectTo = '/' }: RequireAuthProps) {
     );
   }
 
-  if (!session) {
+  // Immediately return null if not authenticated to prevent rendering children
+  // before redirect completes (fixes race condition)
+  if (status === 'unauthenticated' || !session) {
     return null;
   }
 

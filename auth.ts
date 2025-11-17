@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { isEmailAllowed } from "@/lib/services/user-service";
+import { AuthError } from "@/lib/constants/auth";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -13,6 +14,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/",
     error: "/auth/error",
   },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60,   // Update session every 24 hours
+  },
+  // trustHost is needed for development with localhost
+  // In production, ensure AUTH_URL is set to your domain (e.g., https://brose-recipes.com)
   trustHost: true,
   callbacks: {
     async signIn({ user, account, profile }) {
@@ -20,7 +28,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!user.email) {
         console.warn("⚠️  Sign-in denied: No email provided");
         // Redirect to error page instead of returning false to avoid verbose error logging
-        return "/auth/error?error=Configuration";
+        return `/auth/error?error=${AuthError.CONFIGURATION}`;
       }
 
       const allowed = await isEmailAllowed(user.email);
@@ -28,22 +36,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!allowed) {
         console.warn(`⚠️  Sign-in denied: ${user.email} not in allowlist`);
         // Redirect to error page instead of returning false to avoid verbose error logging
-        return "/auth/error?error=AccessDenied";
+        return `/auth/error?error=${AuthError.ACCESS_DENIED}`;
       }
 
       console.log(`✓ Sign-in allowed: ${user.email}`);
-      return true;
-    },
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isApiRoute = nextUrl.pathname.startsWith("/api");
-
-      if (isApiRoute) {
-        // API routes are handled by their own middleware
-        return true;
-      }
-
-      // Allow all page access
       return true;
     },
   },

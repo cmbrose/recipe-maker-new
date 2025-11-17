@@ -1,12 +1,13 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { AuthError } from '@/lib/constants/auth';
 
 export function AuthErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
-  if (error === 'AccessDenied') {
+  if (error === AuthError.ACCESS_DENIED) {
     return (
       <>
         <p className="text-sm">
