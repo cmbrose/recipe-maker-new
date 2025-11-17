@@ -19,9 +19,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60,   // Update session every 24 hours
   },
-  // trustHost is enabled in development for localhost support
-  // In production, AUTH_URL is explicitly set to https://brose-recipes.com
-  trustHost: process.env.NODE_ENV === 'development',
   callbacks: {
     async signIn({ user, account, profile }) {
       // Check if user's email is in the allowlist
