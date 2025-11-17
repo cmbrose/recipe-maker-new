@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRecipe } from '@/lib/hooks/useRecipes';
+import { AuthButton } from '@/components/auth/AuthButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -54,9 +55,9 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
               <span className="text-sm text-muted-foreground">No tags</span>
             )}
           </div>
-          <Button asChild variant="outline">
-            <Link href={`/recipes/${id}/edit`}>Edit</Link>
-          </Button>
+          <AuthButton href={`/recipes/${id}/edit`} variant="outline">
+            Edit
+          </AuthButton>
         </div>
       </div>
 

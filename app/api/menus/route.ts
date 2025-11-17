@@ -9,6 +9,7 @@ import {
   validationErrorResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
+import { requireAuth } from '@/lib/utils/auth';
 
 /**
  * GET /api/menus
@@ -24,6 +25,10 @@ export const GET = withErrorHandling(async () => {
  * Create a new menu
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
+  // Require authentication
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   const body = await request.json();
 
   // Validate input

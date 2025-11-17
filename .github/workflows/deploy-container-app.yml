@@ -84,14 +84,17 @@ jobs:
 
       - name: Deploy to Container Apps
         run: |
-          # Set secrets first
+          # Set secrets first (including OAuth credentials)
           az containerapp secret set \
             --name ${{ env.APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --secrets \
               cosmos-connection="${{ steps.cosmos.outputs.connection-string }}" \
-              insights-connection="${{ steps.insights.outputs.connection-string }}" 2>/dev/null || true
-          
+              insights-connection="${{ steps.insights.outputs.connection-string }}" \
+              auth-secret="${{ secrets.AUTH_SECRET }}" \
+              google-client-id="${{ secrets.GOOGLE_CLIENT_ID }}" \
+              google-client-secret="${{ secrets.GOOGLE_CLIENT_SECRET }}" 2>/dev/null || true
+
           # Update existing app or create new one
           az containerapp update \
             --name ${{ env.APP_NAME }} \
@@ -100,6 +103,10 @@ jobs:
             --set-env-vars \
               COSMOS_DB_CONNECTION_STRING=secretref:cosmos-connection \
               APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:insights-connection \
+              AUTH_SECRET=secretref:auth-secret \
+              GOOGLE_CLIENT_ID=secretref:google-client-id \
+              GOOGLE_CLIENT_SECRET=secretref:google-client-secret \
+              AUTH_URL=https://brose-recipes.com \
             --cpu 1.0 \
             --memory 2.0Gi \
             --min-replicas 1 \
@@ -114,9 +121,16 @@ jobs:
             --secrets \
               cosmos-connection="${{ steps.cosmos.outputs.connection-string }}" \
               insights-connection="${{ steps.insights.outputs.connection-string }}" \
+              auth-secret="${{ secrets.AUTH_SECRET }}" \
+              google-client-id="${{ secrets.GOOGLE_CLIENT_ID }}" \
+              google-client-secret="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
             --env-vars \
               COSMOS_DB_CONNECTION_STRING=secretref:cosmos-connection \
               APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:insights-connection \
+              AUTH_SECRET=secretref:auth-secret \
+              GOOGLE_CLIENT_ID=secretref:google-client-id \
+              GOOGLE_CLIENT_SECRET=secretref:google-client-secret \
+              AUTH_URL=https://brose-recipes.com \
             --cpu 1.0 \
             --memory 2.0Gi \
             --min-replicas 1 \

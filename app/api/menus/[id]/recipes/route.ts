@@ -13,6 +13,7 @@ import {
   validationErrorResponse,
   withErrorHandling,
 } from '@/lib/utils/api-response';
+import { requireAuth } from '@/lib/utils/auth';
 
 interface RouteParams {
   params: Promise<{
@@ -34,6 +35,10 @@ const ReorderRecipesSchema = z.object({
  */
 export const POST = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
+    // Require authentication
+    const authError = await requireAuth();
+    if (authError) return authError;
+
     const { id } = await params;
     const body = await request.json();
 
@@ -61,6 +66,10 @@ export const POST = withErrorHandling(
  */
 export const PUT = withErrorHandling(
   async (request: NextRequest, { params }: RouteParams) => {
+    // Require authentication
+    const authError = await requireAuth();
+    if (authError) return authError;
+
     const { id } = await params;
     const body = await request.json();
 

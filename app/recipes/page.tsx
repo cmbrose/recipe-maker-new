@@ -8,6 +8,7 @@ import { RecipeList } from '@/components/recipes/RecipeList';
 import { RecipeSearch } from '@/components/recipes/RecipeSearch';
 import { useInfiniteRecipes, recipeKeys } from '@/lib/hooks/useRecipes';
 import { Button } from '@/components/ui/button';
+import { AuthButton } from '@/components/auth/AuthButton';
 import { Plus, Link as LinkIcon } from 'lucide-react';
 import { parseTagsFromUrl } from '@/lib/utils/tag-url';
 import type { RecipeFilters } from '@/types/recipe';
@@ -84,18 +85,16 @@ function RecipesContent() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/recipes/new/from-url">
-            <Button variant="outline">
+          <Button asChild variant="outline">
+            <Link href="/recipes/new/from-url">
               <LinkIcon className="h-4 w-4 mr-2" />
               From URL
-            </Button>
-          </Link>
-          <Link href="/recipes/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Recipe
-            </Button>
-          </Link>
+            </Link>
+          </Button>
+          <AuthButton href="/recipes/new">
+            <Plus className="h-4 w-4 mr-2" />
+            New Recipe
+          </AuthButton>
         </div>
       </div>
 

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { AuthButton } from '@/components/auth/AuthButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
@@ -33,9 +34,9 @@ export default function Home() {
             <CardDescription>Start with a blank recipe and add your own details</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full">
-              <Link href="/recipes/new">Create Recipe</Link>
-            </Button>
+            <AuthButton href="/recipes/new" className="w-full">
+              Create Recipe
+            </AuthButton>
           </CardContent>
         </Card>
 
@@ -102,9 +103,9 @@ export default function Home() {
             <CardContent className="p-8 text-center">
               <p className="text-muted-foreground mb-4">No recipes yet! Get started by creating or importing your first recipe.</p>
               <div className="flex gap-4 justify-center">
-                <Button asChild>
-                  <Link href="/recipes/new">Create Recipe</Link>
-                </Button>
+                <AuthButton href="/recipes/new">
+                  Create Recipe
+                </AuthButton>
                 <Button asChild variant="outline">
                   <Link href="/recipes/new/from-url">Import Recipe</Link>
                 </Button>

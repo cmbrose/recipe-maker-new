@@ -4,6 +4,7 @@
 import { MongoClient, Db, Collection, ObjectId } from 'mongodb';
 import type { Recipe as RecipeType } from '@/types/recipe';
 import type { Menu as MenuType } from '@/types/menu';
+import type { AllowedUser } from '@/types/user';
 
 if (!process.env.COSMOS_DB_CONNECTION_STRING) {
   throw new Error('COSMOS_DB_CONNECTION_STRING environment variable is not set');
@@ -18,6 +19,10 @@ export interface RecipeDocument extends Omit<RecipeType, 'id'> {
 }
 
 export interface MenuDocument extends Omit<MenuType, 'id'> {
+  _id: ObjectId;
+}
+
+export interface AllowedUserDocument extends Omit<AllowedUser, 'id'> {
   _id: ObjectId;
 }
 
@@ -63,6 +68,11 @@ export async function getRecipesCollection(): Promise<Collection<RecipeDocument>
 export async function getMenusCollection(): Promise<Collection<MenuDocument>> {
   const db = await getDatabase();
   return db.collection<MenuDocument>('Menu');
+}
+
+export async function getAllowedUsersCollection(): Promise<Collection<AllowedUserDocument>> {
+  const db = await getDatabase();
+  return db.collection<AllowedUserDocument>('AllowedUser');
 }
 
 // Graceful shutdown

@@ -4,8 +4,9 @@ const nextConfig: NextConfig = {
   // Optimize bundle size
   experimental: {
     serverMinification: true,
+    turbopackUseSystemTlsCerts: true,
   },
-  
+
   // Keep OpenTelemetry external to avoid bundling issues
   serverExternalPackages: [
     '@azure/monitor-opentelemetry',
