@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MCP_TOOLS } from '@/lib/mcp/tools';
 import type { MCPRequest, MCPResponse } from '@/lib/mcp/types';
+import z from 'zod';
+import { auth } from '@/auth';
 
 /**
  * Handle MCP requests via POST
@@ -86,7 +88,7 @@ function getToolsList() {
   return MCP_TOOLS.map((tool) => ({
     name: tool.name,
     description: tool.description,
-    inputSchema: tool.jsonSchema,
+    inputSchema: z.toJSONSchema(tool.inputSchema),
   }));
 }
 
@@ -101,6 +103,24 @@ async function handleToolCall(params: any) {
   
   if (!tool) {
     throw new Error(`Unknown tool: ${name}`);
+  }
+
+  if (tool.requiresAuth) {
+    const session = await auth();
+    if (!session?.user) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ 
+              error: 'Authentication required',
+              message: 'You must be logged in to use this tool'
+            }, null, 2),
+          },
+        ],
+        isError: true,
+      };
+    }
   }
 
   try {

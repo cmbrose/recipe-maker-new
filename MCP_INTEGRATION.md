@@ -45,6 +45,106 @@ List recipes with optional filtering, sorting, and pagination.
 }
 ```
 
+### `get_recipe`
+
+Retrieve the full details of a single recipe by its ID.
+
+**Parameters:**
+- `id` (string, required): The ID of the recipe to retrieve (can be obtained from `list_recipes`)
+
+**Returns:**
+The complete recipe object with all details including ingredients, directions, notes, etc.
+
+### `create_recipe`
+
+Create a new recipe. **Requires authentication.**
+
+**Parameters:**
+- `name` (string, required): Name of the recipe
+- `prepTime` (string, optional): Preparation time (e.g., "15 mins", "1 hour")
+- `cookTime` (string, optional): Cooking time (e.g., "30 mins", "45 mins")
+- `totalTime` (string, optional): Total time (e.g., "1 hour 15 mins")
+- `servings` (string, optional): Number of servings (e.g., "4 servings", "8-10 cookies")
+- `ingredients` (array, required): List of ingredient groups. Each group has:
+  - `name` (string, optional): Section name (e.g., "For the sauce", "For the dough")
+  - `ingredients` (array of strings, required): List of ingredients in this group
+- `directions` (array of strings, required): Step-by-step cooking directions
+- `previewUrl` (string, optional): URL to a preview image
+- `source` (string, optional): Source URL if recipe came from a website
+- `sourceKind` (string, optional): Source type - `url` or `manual` (default: `manual`)
+- `tags` (array of strings, optional): Tags for categorization (e.g., `["dinner", "vegetarian", "quick"]`)
+- `notes` (array of strings, optional): Additional notes about the recipe
+
+**Returns:**
+```json
+{
+  "success": true,
+  "message": "Recipe created successfully",
+  "recipe": {
+    "id": "...",
+    "name": "...",
+    "tags": [...],
+    "sourceKind": "manual",
+    "browserUrl": "https://brose-recipes.com/recipes/..."
+  }
+}
+```
+
+**Example:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "create_recipe",
+    "arguments": {
+      "name": "Chocolate Chip Cookies",
+      "prepTime": "15 mins",
+      "cookTime": "12 mins",
+      "servings": "24 cookies",
+      "ingredients": [
+        {
+          "name": "Dry Ingredients",
+          "ingredients": [
+            "2 1/4 cups all-purpose flour",
+            "1 tsp baking soda",
+            "1 tsp salt"
+          ]
+        },
+        {
+          "name": "Wet Ingredients",
+          "ingredients": [
+            "1 cup butter, softened",
+            "3/4 cup granulated sugar",
+            "3/4 cup packed brown sugar",
+            "2 large eggs",
+            "2 tsp vanilla extract"
+          ]
+        },
+        {
+          "ingredients": [
+            "2 cups chocolate chips"
+          ]
+        }
+      ],
+      "directions": [
+        "Preheat oven to 375°F",
+        "Combine flour, baking soda and salt in bowl",
+        "Beat butter and sugars until creamy",
+        "Add eggs and vanilla, beat well",
+        "Gradually beat in flour mixture",
+        "Stir in chocolate chips",
+        "Drop by tablespoon onto baking sheets",
+        "Bake 9-11 minutes until golden brown"
+      ],
+      "tags": ["dessert", "cookies", "chocolate"],
+      "notes": ["These freeze well for up to 3 months"]
+    }
+  }
+}
+```
+
 ## Setup
 
 ### 1. Start the Application
@@ -71,22 +171,23 @@ Configure your MCP client to make POST requests to:
 - Development: `http://localhost:3000/api/mcp`
 - Production: `https://your-domain.com/api/mcp`
 
-### 3. Authentication (Optional)
+### 3. Authentication
 
-If you want to restrict access to the MCP endpoint, you can add authentication by modifying `/app/api/mcp/route.ts`. For example:
+Some MCP tools require authentication (like `create_recipe`). The authentication is handled automatically through NextAuth.js session management.
 
-```typescript
-// Add at the top of POST handler
-const authHeader = request.headers.get('authorization');
-if (authHeader !== `Bearer ${process.env.MCP_API_KEY}`) {
-  return NextResponse.json({
-    jsonrpc: '2.0',
-    error: { code: -32600, message: 'Unauthorized' },
-  }, { status: 401 });
-}
-```
+**Tools requiring authentication:**
+- `create_recipe` - Creating new recipes requires a logged-in user
 
-Then set `MCP_API_KEY` in your environment variables.
+**Tools not requiring authentication:**
+- `list_recipes` - Browse public recipes
+- `get_recipe` - View recipe details
+
+To authenticate:
+1. Log in to the web application at `http://localhost:3000` using Google OAuth
+2. Your session cookie will automatically be sent with MCP requests from the same browser
+3. If using an external MCP client, you'll need to include the session cookie in requests
+
+**Note:** For programmatic access from external clients, you may want to add API key authentication by modifying `/app/api/mcp/route.ts`.
 
 ## Protocol Details
 
@@ -169,21 +270,73 @@ curl -X POST http://localhost:3000/api/mcp \
       }
     }
   }'
+
+# Get a specific recipe
+curl -X POST http://localhost:3000/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "get_recipe",
+      "arguments": {
+        "id": "YOUR_RECIPE_ID_HERE"
+      }
+    }
+  }'
+
+# Create a recipe (requires authentication)
+# Note: You need to be logged in via the web UI first, or include session cookie
+curl -X POST http://localhost:3000/api/mcp \
+  -H "Content-Type: application/json" \
+  -b "your-session-cookie" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "tools/call",
+    "params": {
+      "name": "create_recipe",
+      "arguments": {
+        "name": "Simple Pasta",
+        "prepTime": "5 mins",
+        "cookTime": "10 mins",
+        "servings": "2",
+        "ingredients": [
+          {
+            "ingredients": [
+              "200g pasta",
+              "2 tbsp olive oil",
+              "2 cloves garlic",
+              "Salt and pepper to taste"
+            ]
+          }
+        ],
+        "directions": [
+          "Boil pasta according to package directions",
+          "Heat olive oil in a pan",
+          "Add minced garlic and cook until fragrant",
+          "Toss cooked pasta with garlic oil",
+          "Season with salt and pepper"
+        ],
+        "tags": ["pasta", "quick", "easy"]
+      }
+    }
+  }'
 ```
 
 ## Future Enhancements
 
-Potential tools to add to `/app/api/mcp/route.ts`:
+Potential tools to add:
 
-- `get_recipe`: Get full details of a specific recipe
-- `create_recipe`: Create a new recipe
-- `update_recipe`: Update an existing recipe
-- `delete_recipe`: Delete a recipe
+- `update_recipe`: Update an existing recipe (requires auth)
+- `delete_recipe`: Delete a recipe (requires auth)
 - `get_tags`: Get all available tags
 - `search_recipes`: Advanced search with query syntax
 - `get_recent_recipes`: Get recently viewed or created recipes
-- `create_menu`: Create a meal plan/menu
+- `create_menu`: Create a meal plan/menu (requires auth)
 - `list_menus`: List all menus
+- `scrape_recipe_from_url`: Import a recipe from a URL (requires auth)
 
 ## Architecture
 

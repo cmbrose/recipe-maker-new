@@ -23,10 +23,10 @@ export interface MCPResponse {
   };
 }
 
-export interface MCPTool<TSchema extends z.ZodType = any> {
+export interface MCPTool<TSchema extends z.ZodType> {
   name: string;
   description: string;
   inputSchema: TSchema;
-  jsonSchema: any; // Pre-computed JSON Schema for the MCP protocol
+  requiresAuth: boolean;
   handler: (args: z.infer<TSchema>) => Promise<any>;
 }
