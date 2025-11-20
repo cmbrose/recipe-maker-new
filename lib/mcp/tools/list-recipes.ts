@@ -42,24 +42,42 @@ export const listRecipesTool: MCPTool<typeof listRecipesSchema> = {
     // Call the recipe service
     const result = await listRecipes(filters);
 
-    const condensedRecipes = result.recipes.map(recipe => ({
-      id: recipe.id,
-      name: recipe.name,
-      tags: recipe.tags,
-      sourceKind: recipe.sourceKind,
-      source: recipe.source,
-      previewUrl: recipe.previewUrl,
-      totalTime: `${recipe.totalTime} total` || `${recipe.prepTime || '0 min'} prep + ${recipe.cookTime || '0 min'} cook`,
-      servings: recipe.servings,
-      browserUrl: `https://brose-recipes.com/recipes/${recipe.id}`,
-    }));
+    const condensedRecipes = result.recipes.map(recipe => {
+      let totalTime = recipe.totalTime;
+      if (!totalTime) {
+        totalTime = (recipe.prepTime ? `${recipe.prepTime} + ` : '') + (recipe.cookTime || '');
+      }
+
+      const data = {
+        id: recipe.id,
+        name: recipe.name,
+        tags: recipe.tags,
+        sourceKind: recipe.sourceKind,
+        source: recipe.source,
+        previewUrl: recipe.previewUrl,
+        totalTime,
+        servings: recipe.servings,
+      }
+
+      // Remove undefined fields
+      Object.keys(data).forEach(key => 
+        data[key as keyof typeof data] === undefined && delete data[key as keyof typeof data]
+      );
+
+      return data;
+    });
+
+    const condensedResult = {
+      ...result,
+      recipes: condensedRecipes,
+    };
 
     // Return result in MCP format
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(condensedRecipes, null, 2),
+          text: JSON.stringify(condensedResult, null, 2),
         },
       ],
     };
