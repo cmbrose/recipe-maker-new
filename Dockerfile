@@ -50,18 +50,15 @@ COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/start-mcp-proxy.sh /usr/local/bin/docker-entrypoint.sh
 
 # Create log and temp directories and set permissions
-RUN mkdir -p /var/log/nginx /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp && \
-    chown -R node:node /var/log/nginx /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp /app
-
-# Switch to non-root user
-USER node
+RUN mkdir -p /var/log/nginx /var/lib/nginx /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp && \
+    chown -R node:node /app
 
 # Expose port 80 (nginx)
 EXPOSE 80
 
 # Health check via nginx
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:80/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD curl -f http://localhost:80/health || exit 1
 
-# Start all services via entrypoint script
+# Start all services via entrypoint script (runs as root to allow nginx on port 80)
 CMD ["/usr/local/bin/docker-entrypoint.sh"]

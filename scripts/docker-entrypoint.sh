@@ -25,9 +25,9 @@ if [ -n "$AUTH_URL" ]; then
     echo "NEXTAUTH_URL set to: $NEXTAUTH_URL"
 fi
 
-# Start Next.js app in background
+# Start Next.js app in background (as node user for security)
 echo "Starting Next.js application on port 3000..."
-node_modules/.bin/next start &
+su - node -s /bin/bash -c "cd /app && node_modules/.bin/next start" &
 NEXTJS_PID=$!
 echo "Next.js PID: $NEXTJS_PID"
 

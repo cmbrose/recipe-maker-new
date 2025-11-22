@@ -34,7 +34,6 @@ mkdir -p data
 exec /usr/local/bin/mcp-auth-proxy \
   --external-url "$AUTH_URL" \
   --listen ":8080" \
-  --tls-accept-tos \
   --google-client-id "$GOOGLE_CLIENT_ID" \
   --google-client-secret "$GOOGLE_CLIENT_SECRET" \
   "http://localhost:3000/api/mcp"
