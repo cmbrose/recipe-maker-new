@@ -27,7 +27,8 @@ fi
 
 # Start Next.js app in background (as node user for security)
 echo "Starting Next.js application on port 3000..."
-su - node -s /bin/bash -c "cd /app && node_modules/.bin/next start" &
+# Use 'su' without '-' to preserve environment variables
+su node -s /bin/bash -c "cd /app && node_modules/.bin/next start" &
 NEXTJS_PID=$!
 echo "Next.js PID: $NEXTJS_PID"
 
@@ -57,21 +58,22 @@ else
     MCP_PROXY_PID=""
 fi
 
-# Start nginx in foreground
+# Start nginx in foreground (this becomes the main process)
 echo "Starting nginx on port 80..."
-exec nginx -g 'daemon off;' &
-NGINX_PID=$!
-echo "Nginx PID: $NGINX_PID"
+# Use exec so nginx becomes PID 1 and receives signals properly
+exec nginx -g 'daemon off;'
 
-echo "=== All services started ==="
-echo "Next.js: http://localhost:3000"
+echo "=== All background services started ==="
+echo "Next.js: http://localhost:3000 (PID: $NEXTJS_PID)"
 if [ -n "$MCP_PROXY_PID" ]; then
-    echo "MCP Auth Proxy: http://localhost:8080"
+    echo "MCP Auth Proxy: http://localhost:8080 (PID: $MCP_PROXY_PID)"
     echo "MCP Endpoint (via nginx): http://localhost:80/mcp"
 fi
-echo "Nginx: http://localhost:80"
 echo ""
-echo "Press Ctrl+C to stop all services"
+echo "Starting nginx on port 80 (will become main process)..."
+echo "Container will stop if nginx exits"
+echo ""
 
-# Wait for all background processes
-wait $NEXTJS_PID $MCP_PROXY_PID $NGINX_PID 2>/dev/null
+# nginx runs in foreground and becomes the main process
+# If nginx exits, the container will stop
+# This is the standard pattern for multi-service containers
