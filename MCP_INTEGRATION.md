@@ -2,17 +2,31 @@
 
 This application exposes a Model Context Protocol (MCP) endpoint that allows LLM chat applications (like Claude Desktop, Cline, or other MCP-compatible clients) to access your recipe data through a standardized protocol.
 
+## Architecture
+
+The MCP endpoint is protected by OAuth authentication using `mcp-auth-proxy`. The application runs three services in a Docker container:
+
+1. **Next.js Application** (port 3000) - Main web application and internal MCP API
+2. **MCP Auth Proxy** (port 3001) - OAuth wrapper for MCP endpoint using Google OAuth
+3. **Nginx** (port 80) - Routes `/mcp` to auth proxy, everything else to Next.js
+
+This architecture allows:
+- MCP clients to authenticate using OAuth flows (required for programmatic access)
+- Regular browser users to access the web app without interference
+- REST API clients to access other endpoints normally
+
 ## Endpoint
 
 The MCP server is available at:
 ```
-POST http://localhost:3000/api/mcp
+# Local development (via nginx, exposed on port 3000)
+POST http://localhost:3000/mcp
+
+# Production
+POST https://brose-recipes.com/mcp
 ```
 
-Or in production:
-```
-POST https://your-domain.com/api/mcp
-```
+**Note:** The internal Next.js endpoint at `/api/mcp` is not directly accessible from outside the container. All external MCP requests must go through the `/mcp` path which enforces OAuth authentication.
 
 ## Available Tools
 
@@ -147,47 +161,89 @@ Create a new recipe. **Requires authentication.**
 
 ## Setup
 
-### 1. Start the Application
+### 1. Local Development
 
-Make sure your Next.js application is running:
+#### Option A: Direct Next.js Development (No OAuth)
+For quick development without MCP OAuth:
 
 ```bash
 pnpm dev
-# or in production
-pnpm start
 ```
 
-The MCP endpoint will be available at `/api/mcp`.
+The internal MCP endpoint will be available at `http://localhost:3000/api/mcp` but without OAuth protection.
+
+#### Option B: Full Docker Environment (With OAuth)
+To test the complete production-like setup with OAuth:
+
+```bash
+# Create .env file with required variables:
+# COSMOS_DB_CONNECTION_STRING=...
+# AUTH_SECRET=...
+# GOOGLE_CLIENT_ID=...
+# GOOGLE_CLIENT_SECRET=...
+# AUTH_URL=http://localhost
+
+# Build and run the Docker container
+chmod +x scripts/run-local-docker.sh
+./scripts/run-local-docker.sh
+```
+
+This starts all three services (Next.js, MCP Auth Proxy, Nginx) on port 80.
 
 ### 2. Configure MCP Client
 
-#### For Claude Desktop (via HTTP)
+#### For Claude Desktop
 
-Claude Desktop primarily supports stdio-based MCP servers, but you can use an HTTP-to-stdio bridge. For now, you can interact with the MCP endpoint using any HTTP client.
+Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on Mac):
+
+```json
+{
+  "mcpServers": {
+    "recipe-maker": {
+      "url": "http://localhost:3000/mcp",
+      "oauth": {
+        "provider": "google",
+        "scopes": ["openid", "email", "profile"]
+      }
+    }
+  }
+}
+```
 
 #### For Other MCP-Compatible Tools
 
 Configure your MCP client to make POST requests to:
-- Development: `http://localhost:3000/api/mcp`
-- Production: `https://your-domain.com/api/mcp`
+- Local: `http://localhost:3000/mcp`
+- Production: `https://brose-recipes.com/mcp`
+
+The first request will initiate an OAuth flow that opens a browser for authentication.
 
 ### 3. Authentication
 
-Some MCP tools require authentication (like `create_recipe`). The authentication is handled automatically through NextAuth.js session management.
+**MCP Endpoint Authentication:**
+The `/mcp` endpoint requires OAuth authentication via `mcp-auth-proxy`. When an MCP client connects:
 
-**Tools requiring authentication:**
-- `create_recipe` - Creating new recipes requires a logged-in user
+1. The client makes a request to `/mcp`
+2. If not authenticated, `mcp-auth-proxy` redirects to Google OAuth
+3. User authenticates in browser
+4. Client receives access token for subsequent requests
 
-**Tools not requiring authentication:**
+**Tool-Level Authentication:**
+Some MCP tools also require the user to be in the application's allowlist:
+
+**Tools requiring allowlist:**
+- `create_recipe` - Creating new recipes requires a logged-in, allowed user
+
+**Tools not requiring allowlist:**
 - `list_recipes` - Browse public recipes
 - `get_recipe` - View recipe details
 
-To authenticate:
-1. Log in to the web application at `http://localhost:3000` using Google OAuth
-2. Your session cookie will automatically be sent with MCP requests from the same browser
-3. If using an external MCP client, you'll need to include the session cookie in requests
-
-**Note:** For programmatic access from external clients, you may want to add API key authentication by modifying `/app/api/mcp/route.ts`.
+To manage the allowlist:
+```bash
+pnpm user:add    # Add email to allowlist
+pnpm user:list   # List allowed emails
+pnpm user:remove # Remove email from allowlist
+```
 
 ## Protocol Details
 
@@ -244,7 +300,17 @@ POST /api/mcp
 
 ## Testing
 
-You can test the MCP endpoint using curl:
+### Testing with OAuth (via Docker)
+
+If running the full Docker setup, you'll need to authenticate first. The easiest way is to use an MCP client that handles OAuth (like Claude Desktop).
+
+For manual testing, you'll need to:
+1. Complete the OAuth flow to get an access token
+2. Include the token in subsequent requests
+
+### Testing Without OAuth (Direct Next.js)
+
+For development, you can test the internal endpoint directly:
 
 ```bash
 # List available tools
@@ -338,30 +404,89 @@ Potential tools to add:
 - `list_menus`: List all menus
 - `scrape_recipe_from_url`: Import a recipe from a URL (requires auth)
 
-## Architecture
+## Technical Architecture
 
-The MCP integration is implemented as a Next.js API route at `/app/api/mcp/route.ts`. This approach has several advantages:
+### Multi-Service Container
 
-1. **No separate service**: Runs as part of your existing Next.js application
-2. **Same database connection**: Uses the existing MongoDB connection and services
-3. **Easy deployment**: Deploys with your app, no additional configuration needed
-4. **Authentication**: Can leverage existing Next.js authentication
-5. **Logging**: Uses your existing logging infrastructure
+The application runs three services in a single Docker container:
+
+1. **Next.js Application** (port 3000)
+   - Main web application
+   - Internal MCP API at `/api/mcp`
+   - Handles business logic and database operations
+
+2. **MCP Auth Proxy** (port 3001)
+   - Wraps the internal MCP endpoint with OAuth
+   - Uses [mcp-auth-proxy](https://github.com/sigbit/mcp-auth-proxy)
+   - Handles Google OAuth flow for MCP clients
+
+3. **Nginx** (port 80)
+   - Entry point for all traffic
+   - Routes `/mcp` → MCP Auth Proxy (port 3001)
+   - Routes everything else → Next.js (port 3000)
+
+### Service Flow
+
+```
+MCP Client Request → Nginx (/mcp) → MCP Auth Proxy (OAuth) → Next.js (/api/mcp) → Database
+Browser Request   → Nginx (/*) → Next.js → Database
+```
+
+### Benefits
+
+1. **OAuth for MCP**: MCP clients can authenticate programmatically
+2. **Transparent to browsers**: Web users access the app normally
+3. **Single deployment**: All services in one container
+4. **Consistent environment**: Local dev mirrors production
+5. **Existing auth**: Web app continues using NextAuth.js sessions
 
 ## Troubleshooting
 
 ### Connection Errors
 
-1. Ensure your Next.js app is running
-2. Verify the MCP endpoint is accessible: `curl http://localhost:3000/api/mcp`
-3. Check your MongoDB connection is working
+**Docker setup not starting:**
+1. Check all required environment variables are set in `.env`
+2. View container logs: `docker logs -f recipe-maker-dev`
+3. Ensure ports 80 is available on your machine
+
+**MCP endpoint not accessible:**
+1. Verify container is running: `docker ps`
+2. Check nginx is routing correctly: `curl http://localhost/health`
+3. Test internal Next.js endpoint: `docker exec recipe-maker-dev curl http://localhost:3000/api/health`
+
+**OAuth flow failing:**
+1. Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set
+2. Check `AUTH_URL` matches your actual URL (including protocol)
+3. Ensure redirect URI is configured in Google Cloud Console: `https://your-domain.com/mcp/callback`
+4. View MCP Auth Proxy logs in container: `docker logs recipe-maker-dev | grep mcp-auth-proxy`
 
 ### Tool Execution Errors
 
-1. Check the Next.js server logs
+1. Check the Next.js server logs in container
 2. Verify your database has data (run `pnpm db:seed` if needed)
 3. Ensure the request format matches the JSON-RPC 2.0 specification
+4. For `create_recipe`, verify user email is in allowlist: `pnpm user:list`
 
-### CORS Issues
+### Local Docker Issues
 
-If you need to call the MCP endpoint from a browser or different origin, CORS is already configured in the OPTIONS handler. Modify the headers if you need more specific control.
+**Building fails:**
+- Ensure `COSMOS_DB_CONNECTION_STRING` is set during build
+- Check Docker has enough resources (memory/disk)
+
+**Container crashes immediately:**
+- Check logs: `docker logs recipe-maker-dev`
+- Verify all scripts have execute permissions
+- Ensure Next.js built successfully in the image
+
+**Services not starting in order:**
+- The entrypoint script waits for Next.js before starting other services
+- If MCP Auth Proxy starts before Next.js is ready, it will fail
+- Check startup sequence in logs
+
+### Production Deployment Issues
+
+**Container Apps deployment fails:**
+1. Verify all GitHub secrets are set: `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+2. Check Azure Container Registry access
+3. Ensure target port is set to 80 (not 3000)
+4. View deployment logs in Azure Portal

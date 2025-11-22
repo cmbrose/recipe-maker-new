@@ -10,6 +10,7 @@ A modern recipe organization and meal planning application built with TypeScript
 - 📋 **Menu Planning**: Create meal plans and collections of recipes
 - 🔍 **Advanced Search**: Find recipes with powerful query syntax
 - 🔐 **Google OAuth Authentication**: Secure authentication for write operations
+- 🤖 **MCP Integration**: Model Context Protocol for AI assistant access
 - ⚡ **Real-time Updates**: Collaborative editing with live updates (planned)
 - 📱 **Responsive Design**: Works seamlessly on desktop and mobile
 
@@ -97,6 +98,8 @@ recipe-maker/
 
 ### Development
 
+#### Option 1: Standard Next.js Development
+
 Run the development server:
 
 ```bash
@@ -106,6 +109,16 @@ pnpm dev
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 The app will automatically reload when you make changes.
+
+#### Option 2: Docker Development (Full Production Simulation)
+
+To run the complete multi-service setup locally (includes MCP OAuth):
+
+```bash
+./scripts/run-local-docker.sh
+```
+
+This runs nginx + Next.js + MCP Auth Proxy accessible on port 3000 (internal port 80).
 
 ### Available Scripts
 
@@ -175,6 +188,24 @@ The application uses Google OAuth for authentication. Write operations (create, 
 - View/List ❌ Public
 
 For detailed setup instructions, see [GOOGLE_OAUTH_SETUP.md](GOOGLE_OAUTH_SETUP.md).
+
+## Model Context Protocol (MCP)
+
+The application exposes an MCP endpoint for AI assistants like Claude Desktop to access your recipes programmatically. The MCP endpoint is protected by OAuth authentication.
+
+### Quick Start
+
+1. Run the Docker environment: `./scripts/run-local-docker.sh`
+2. Configure your MCP client to connect to `http://localhost/mcp`
+3. Authenticate via OAuth on first connection
+
+For complete MCP setup and usage, see [MCP_INTEGRATION.md](MCP_INTEGRATION.md).
+
+### MCP Tools Available
+
+- `list_recipes` - Browse and search recipes
+- `get_recipe` - Get detailed recipe information
+- `create_recipe` - Add new recipes (requires allowlist)
 
 ## Supported Recipe Sites (Planned)
 

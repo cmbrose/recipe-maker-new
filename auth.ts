@@ -10,6 +10,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
+  // Use AUTH_URL for redirects in Docker/production environments
+  ...(process.env.AUTH_URL && { 
+    basePath: "/api/auth",
+    redirectProxyUrl: process.env.AUTH_URL,
+  }),
   pages: {
     signIn: "/",
     error: "/auth/error",

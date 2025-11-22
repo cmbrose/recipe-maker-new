@@ -96,6 +96,7 @@ jobs:
               google-client-secret="${{ secrets.GOOGLE_CLIENT_SECRET }}" 2>/dev/null || true
 
           # Update existing app or create new one
+          # Note: ACA will map external port to internal port 80 (nginx)
           az containerapp update \
             --name ${{ env.APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
@@ -107,8 +108,8 @@ jobs:
               GOOGLE_CLIENT_ID=secretref:google-client-id \
               GOOGLE_CLIENT_SECRET=secretref:google-client-secret \
               AUTH_URL=https://brose-recipes.com \
-            --cpu 1.0 \
-            --memory 2.0Gi \
+            --cpu 0.5 \
+            --memory 1.0Gi \
             --min-replicas 1 \
             --max-replicas 3 || \
           az containerapp create \
@@ -116,7 +117,7 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --environment ${{ env.APP_NAME }}-env \
             --image ${{ env.REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            --target-port 3000 \
+            --target-port 80 \
             --ingress external \
             --secrets \
               cosmos-connection="${{ steps.cosmos.outputs.connection-string }}" \
@@ -137,6 +138,25 @@ jobs:
             --max-replicas 3 \
             --registry-server ${{ env.REGISTRY }}.azurecr.io
 
+      - name: Configure health probes
+        run: |
+          # Update health probes to use nginx health endpoint
+          az containerapp update \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --startup-probe-type http \
+            --startup-probe-path "/health" \
+            --startup-probe-initial-delay 10 \
+            --startup-probe-period 10 \
+            --startup-probe-timeout 5 \
+            --startup-probe-failure-threshold 30 \
+            --liveness-probe-type http \
+            --liveness-probe-path "/health" \
+            --liveness-probe-initial-delay 30 \
+            --liveness-probe-period 30 \
+            --liveness-probe-timeout 5 \
+            --liveness-probe-failure-threshold 3
+
       - name: Get app URL
         id: app-url
         run: |
@@ -150,9 +170,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**App URL:** https://$URL" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Health check:** https://$URL/api/health" >> $GITHUB_STEP_SUMMARY
+          echo "**Health check:** https://$URL/health" >> $GITHUB_STEP_SUMMARY
+          echo "**API Health:** https://$URL/api/health" >> $GITHUB_STEP_SUMMARY
+          echo "**MCP Endpoint:** https://$URL/mcp" >> $GITHUB_STEP_SUMMARY
 
       - name: Test health endpoint
         run: |
           sleep 30  # Wait for container to start
-          curl -f ${{ steps.app-url.outputs.url }}/api/health || echo "Health check failed (app may still be starting)"
+          curl -f ${{ steps.app-url.outputs.url }}/health || echo "Health check failed (app may still be starting)"
