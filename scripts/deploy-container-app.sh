@@ -133,26 +133,10 @@ az containerapp create \
   --min-replicas 1 --max-replicas 3 \
   --registry-server "$ACR_LOGIN_SERVER"
 
-# Add health probes with longer timeout for startup
-echo "Configuring health probes..."
-az containerapp update \
-  --name "$APP_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --startup-probe-type http \
-  --startup-probe-path "/api/health" \
-  --startup-probe-initial-delay 10 \
-  --startup-probe-period 10 \
-  --startup-probe-timeout 5 \
-  --startup-probe-failure-threshold 30 \
-  --liveness-probe-type http \
-  --liveness-probe-path "/api/health" \
-  --liveness-probe-initial-delay 30 \
-  --liveness-probe-period 30 \
-  --liveness-probe-timeout 5 \
-  --liveness-probe-failure-threshold 3
-
 echo ""
 echo "✓ Deployment complete!"
+echo ""
+echo "Note: Health probes are configured in the Dockerfile via HEALTHCHECK directive"
 echo ""
 
 # Get the app URL
