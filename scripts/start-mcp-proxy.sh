@@ -32,7 +32,7 @@ echo "Auth URL: $AUTH_URL"
 mkdir -p data
 
 exec /usr/local/bin/mcp-auth-proxy \
-  --external-url "$AUTH_URL" \
+  --external-url "http://localhost" \
   --listen ":8080" \
   --tls-accept-tos \
   --google-client-id "$GOOGLE_CLIENT_ID" \
