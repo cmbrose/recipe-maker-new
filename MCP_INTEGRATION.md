@@ -173,21 +173,33 @@ Configure your MCP client to make POST requests to:
 
 ### 3. Authentication
 
-Some MCP tools require authentication (like `create_recipe`). The authentication is handled automatically through NextAuth.js session management.
+Some MCP tools require authentication (like `create_recipe`). The MCP server exposes its own OAuth 2.1-compatible flow tailored for MCP clients (based on the official SDK sample) and is separate from the browser/API authentication. Only the `/api/mcp` endpoints use this flow.
+
+**OAuth metadata:**
+- Authorization server metadata: `/.well-known/oauth-authorization-server` under `/api/mcp/oauth` (generated with the MCP SDK's
+  helper to match `mcpAuthRouter` defaults)
+- Protected resource metadata: `/.well-known/oauth-protected-resource` under `/api/mcp/oauth`
+
+**Primary endpoints:**
+- `GET /api/mcp/oauth/authorize`
+- `POST /api/mcp/oauth/token` (uses `client_secret_post` when a secret exists for the client)
+- `POST /api/mcp/oauth/register` (dynamic client registration)
+
+**Scopes:** `mcp:tools`
+
+**User sign-in:**
+- If you are already signed in via the web UI, the OAuth authorize request will reuse that Google session.
+- For local testing without a browser session, set `MCP_OAUTH_TEST_USER_EMAIL` to automatically approve requests.
+
+**State persistence:**
+- Authorization codes, registered clients, and tokens are persisted to the path in `MCP_OAUTH_STORE_PATH` (defaults to `data/mcp-oauth-store.json`). In production, mount this path to durable storage.
 
 **Tools requiring authentication:**
-- `create_recipe` - Creating new recipes requires a logged-in user
+- `create_recipe` - Creating new recipes requires a valid bearer token issued by the MCP OAuth server.
 
 **Tools not requiring authentication:**
 - `list_recipes` - Browse public recipes
 - `get_recipe` - View recipe details
-
-To authenticate:
-1. Log in to the web application at `http://localhost:3000` using Google OAuth
-2. Your session cookie will automatically be sent with MCP requests from the same browser
-3. If using an external MCP client, you'll need to include the session cookie in requests
-
-**Note:** For programmatic access from external clients, you may want to add API key authentication by modifying `/app/api/mcp/route.ts`.
 
 ## Protocol Details
 
