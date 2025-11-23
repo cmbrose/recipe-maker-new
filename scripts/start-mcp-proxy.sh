@@ -28,11 +28,12 @@ echo "Starting mcp-auth-proxy..."
 echo "Target: http://localhost:3000/api/mcp"
 echo "Listen: :8080"
 echo "Auth URL: $AUTH_URL"
+echo "External URL: $AUTH_URL/mcp"
 
 mkdir -p data
 
 exec /usr/local/bin/mcp-auth-proxy \
-  --external-url "$AUTH_URL" \
+  --external-url "$AUTH_URL/mcp" \
   --listen ":8080" \
   --tls-accept-tos \
   --google-client-id "$GOOGLE_CLIENT_ID" \

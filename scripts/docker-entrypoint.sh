@@ -28,9 +28,10 @@ fi
 # Start Next.js app in background (as node user for security)
 echo "Starting Next.js application on port 3000..."
 # Use 'su' without '-' to preserve environment variables
-su node -s /bin/bash -c "cd /app && node_modules/.bin/next start" &
+su node -s /bin/bash -c "cd /app && node_modules/.bin/next start" > /var/log/nextjs.log 2>&1 &
 NEXTJS_PID=$!
 echo "Next.js PID: $NEXTJS_PID"
+echo "Next.js logs: /var/log/nextjs.log"
 
 # Wait for Next.js to be ready
 echo "Waiting for Next.js to start..."
@@ -49,9 +50,10 @@ done
 # Start MCP Auth Proxy in background (only if OAuth credentials are provided)
 if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$AUTH_URL" ]; then
     echo "Starting MCP Auth Proxy on port 8080..."
-    /usr/local/bin/start-mcp-proxy.sh &
+    /usr/local/bin/start-mcp-proxy.sh > /var/log/mcp-proxy.log 2>&1 &
     MCP_PROXY_PID=$!
     echo "MCP Auth Proxy PID: $MCP_PROXY_PID"
+    echo "MCP Auth Proxy logs: /var/log/mcp-proxy.log"
 else
     echo "Warning: OAuth credentials not provided, MCP Auth Proxy will not start"
     echo "MCP endpoint will not be available at /mcp"
@@ -65,10 +67,15 @@ exec nginx -g 'daemon off;'
 
 echo "=== All background services started ==="
 echo "Next.js: http://localhost:3000 (PID: $NEXTJS_PID)"
+echo "  Logs: /var/log/nextjs.log"
 if [ -n "$MCP_PROXY_PID" ]; then
     echo "MCP Auth Proxy: http://localhost:8080 (PID: $MCP_PROXY_PID)"
+    echo "  Logs: /var/log/mcp-proxy.log"
     echo "MCP Endpoint (via nginx): http://localhost:80/mcp"
 fi
+echo "Nginx: http://localhost:80"
+echo "  Access log: /var/log/nginx/access.log"
+echo "  Error log: /var/log/nginx/error.log"
 echo ""
 echo "Starting nginx on port 80 (will become main process)..."
 echo "Container will stop if nginx exits"
