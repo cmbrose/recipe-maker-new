@@ -25,17 +25,19 @@ if [ -z "$AUTH_URL" ]; then
 fi
 
 echo "Starting mcp-auth-proxy..."
-echo "Target: http://localhost:3000/api/mcp"
-echo "Listen: :8080"
-echo "Auth URL: $AUTH_URL"
-echo "External URL: $AUTH_URL/mcp"
+echo "Target backend: http://localhost:3000/api/mcp"
+echo "Listen on: :8080"
+echo "External URL: $AUTH_URL"
+echo ""
+echo "MCP endpoint (via nginx): $AUTH_URL/mcp -> proxy root / -> backend /api/mcp"
+echo "OAuth endpoints: $AUTH_URL/authorize, /callback, etc. -> proxy root"
 
 mkdir -p data
 
 exec /usr/local/bin/mcp-auth-proxy \
-  --external-url "$AUTH_URL/mcp" \
+  --external-url "$AUTH_URL" \
   --listen ":8080" \
-  --tls-accept-tos \
+  --no-auto-tls \
   --google-client-id "$GOOGLE_CLIENT_ID" \
   --google-client-secret "$GOOGLE_CLIENT_SECRET" \
   "http://localhost:3000/api/mcp"
