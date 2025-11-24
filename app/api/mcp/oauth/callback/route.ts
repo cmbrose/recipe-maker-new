@@ -22,8 +22,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get MCP OAuth session from cookie
-    const mcpSessionId = request.cookies.get('mcp_oauth_session')?.value;
+    // Get MCP OAuth session from cookie (try both dev and prod names)
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieName = isProd ? '__Host-mcp_oauth_session' : 'mcp_oauth_session';
+    const mcpSessionId = request.cookies.get(cookieName)?.value;
+
     if (!mcpSessionId) {
       return new NextResponse(
         '<html><body><h1>Error</h1><p>Missing OAuth session. Please start the authorization flow again.</p></body></html>',
@@ -54,16 +57,15 @@ export async function GET(request: NextRequest) {
 
     // Clear MCP OAuth session cookie
     const response = NextResponse.redirect(redirectUrl);
-    response.cookies.delete('mcp_oauth_session');
+    response.cookies.delete(cookieName);
 
     return response;
   } catch (error) {
     console.error('OAuth callback error:', error);
 
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
+    // Do not leak internal error details to the user
     return new NextResponse(
-      `<html><body><h1>Authorization Error</h1><p>${errorMessage}</p></body></html>`,
+      '<html><body><h1>Authorization Error</h1><p>An error occurred during authorization. Please try again.</p></body></html>',
       {
         status: 500,
         headers: { 'Content-Type': 'text/html' },

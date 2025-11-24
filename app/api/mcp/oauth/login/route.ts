@@ -46,12 +46,15 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.redirect(signInUrl);
 
-    // Set cookie with session ID (expires in 1 hour)
-    response.cookies.set('mcp_oauth_session', sessionId, {
+    // Set cookie with session ID (expires in 10 minutes to match auth code expiry)
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieName = isProd ? '__Host-mcp_oauth_session' : 'mcp_oauth_session';
+
+    response.cookies.set(cookieName, sessionId, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60, // 1 hour
+      secure: isProd,
+      sameSite: 'strict',
+      maxAge: 600, // 10 minutes (matches authorization code expiry)
       path: '/',
     });
 

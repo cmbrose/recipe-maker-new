@@ -27,6 +27,11 @@ export interface AuthorizationRequest {
   state?: string;
 }
 
+interface PendingAuthSession {
+  request: AuthorizationRequest;
+  createdAt: number; // Timestamp for expiry tracking
+}
+
 export interface AuthorizedUser {
   userId: string;
   userEmail: string;
@@ -46,8 +51,8 @@ export class MCPOAuthProvider {
   private tokensStore: FileBasedTokensStore;
 
   // In-memory session store for pending authorizations
-  // Maps session ID -> authorization request
-  private pendingAuths = new Map<string, AuthorizationRequest>();
+  // Maps session ID -> pending auth session
+  private pendingAuths = new Map<string, PendingAuthSession>();
 
   constructor() {
     this.clientsStore = new FileBasedClientsStore();
@@ -67,16 +72,21 @@ export class MCPOAuthProvider {
    */
   async registerClient(
     name: string,
-    redirectUris: string[]
+    redirectUris: string[],
+    ownerId: string
   ): Promise<ClientMetadata> {
-    return this.clientsStore.registerClient({ name, redirectUris });
+    return this.clientsStore.registerClient({ name, redirectUris, ownerId });
   }
 
   /**
-   * List all registered clients
+   * List all registered clients (optionally filter by owner)
    */
-  async listClients(): Promise<ClientMetadata[]> {
-    return this.clientsStore.listClients();
+  async listClients(ownerId?: string): Promise<ClientMetadata[]> {
+    const allClients = await this.clientsStore.listClients();
+    if (ownerId) {
+      return allClients.filter(client => client.ownerId === ownerId);
+    }
+    return allClients;
   }
 
   /**
@@ -105,8 +115,11 @@ export class MCPOAuthProvider {
     // Generate session ID
     const sessionId = randomBytes(32).toString('hex');
 
-    // Store pending authorization
-    this.pendingAuths.set(sessionId, request);
+    // Store pending authorization with timestamp
+    this.pendingAuths.set(sessionId, {
+      request,
+      createdAt: Date.now(),
+    });
 
     // Clean up old sessions (older than 1 hour)
     this.cleanupOldSessions();
@@ -126,11 +139,13 @@ export class MCPOAuthProvider {
     sessionId: string,
     user: AuthorizedUser
   ): Promise<{ code: string; redirectUri: string; state?: string }> {
-    // Get pending authorization request
-    const request = this.pendingAuths.get(sessionId);
-    if (!request) {
+    // Get pending authorization session
+    const session = this.pendingAuths.get(sessionId);
+    if (!session) {
       throw new Error('Invalid or expired session');
     }
+
+    const request = session.request;
 
     // Remove from pending
     this.pendingAuths.delete(sessionId);
@@ -165,7 +180,8 @@ export class MCPOAuthProvider {
    * Get pending authorization request by session ID
    */
   getPendingAuthorization(sessionId: string): AuthorizationRequest | undefined {
-    return this.pendingAuths.get(sessionId);
+    const session = this.pendingAuths.get(sessionId);
+    return session?.request;
   }
 
   /**
@@ -177,15 +193,10 @@ export class MCPOAuthProvider {
     codeVerifier: string,
     redirectUri: string
   ): Promise<{ accessToken: string; tokenType: string; expiresIn: number }> {
-    // Get authorization code
-    const authCode = await this.codesStore.getCode(code);
+    // Atomically consume the authorization code (minimizes TOCTOU race condition)
+    const authCode = await this.codesStore.consumeCode(code);
     if (!authCode) {
       throw new Error('Invalid or expired authorization code');
-    }
-
-    // Validate code hasn't been used
-    if (authCode.used) {
-      throw new Error('Authorization code already used');
     }
 
     // Validate client ID
@@ -207,9 +218,6 @@ export class MCPOAuthProvider {
     if (!isValid) {
       throw new Error('Invalid code verifier');
     }
-
-    // Mark code as used
-    await this.codesStore.markCodeAsUsed(code);
 
     // Generate access token
     const accessToken = randomBytes(32).toString('hex');
@@ -286,12 +294,16 @@ export class MCPOAuthProvider {
 
   /**
    * Clean up old pending authorization sessions
+   * Removes sessions older than 1 hour
    */
   private cleanupOldSessions(): void {
-    // For simplicity, just clear all if we have too many
-    // In production, you'd want to track timestamps
-    if (this.pendingAuths.size > 1000) {
-      this.pendingAuths.clear();
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+    // Remove expired sessions
+    for (const [sessionId, session] of this.pendingAuths.entries()) {
+      if (session.createdAt < oneHourAgo) {
+        this.pendingAuths.delete(sessionId);
+      }
     }
   }
 }

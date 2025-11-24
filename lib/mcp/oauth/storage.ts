@@ -19,6 +19,7 @@ export interface ClientMetadata {
   id: string;
   name: string;
   redirectUris: string[];
+  ownerId: string; // The user who registered/owns this client
   createdAt: Date;
 }
 
@@ -74,9 +75,14 @@ async function readJsonFile<T>(filePath: string): Promise<Record<string, T>> {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     return JSON.parse(content);
-  } catch (error) {
+  } catch (error: any) {
+    // File doesn't exist is fine - treat as empty
+    if (error && error.code === 'ENOENT') {
+      return {};
+    }
+    // Other errors (permissions, corruption, etc.) should be logged and re-thrown
     console.error(`Failed to read ${filePath}:`, error);
-    return {};
+    throw error;
   }
 }
 
@@ -195,6 +201,35 @@ export class FileBasedCodesStore {
       codes[code].used = true;
       await writeJsonFile(CODES_FILE, codes);
     }
+  }
+
+  /**
+   * Atomically consume an authorization code (check and mark as used)
+   * Returns the code if valid and not yet used, undefined otherwise
+   * This minimizes (but doesn't eliminate) the TOCTOU race condition
+   */
+  async consumeCode(code: string): Promise<AuthorizationCode | undefined> {
+    await this.ensureInitialized();
+    const codes = await readJsonFile<AuthorizationCode>(CODES_FILE);
+    const authCode = codes[code];
+
+    if (!authCode) {
+      return undefined;
+    }
+
+    // Parse date strings back to Date objects
+    authCode.expiresAt = new Date(authCode.expiresAt);
+
+    // Check if expired or already used
+    if (authCode.expiresAt < new Date() || authCode.used) {
+      return undefined;
+    }
+
+    // Mark as used and save immediately
+    codes[code].used = true;
+    await writeJsonFile(CODES_FILE, codes);
+
+    return authCode;
   }
 
   private async cleanupExpiredCodes(): Promise<void> {

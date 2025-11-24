@@ -39,23 +39,60 @@ export async function POST(request: NextRequest) {
 
     // Validate redirect URIs
     for (const uri of redirect_uris) {
+      let parsedUrl;
       try {
-        new URL(uri);
+        parsedUrl = new URL(uri);
       } catch {
         return NextResponse.json(
           {
             error: 'invalid_request',
-            error_description: `Invalid redirect URI: ${uri}`,
+            error_description: 'Invalid redirect URI format',
           },
           { status: 400 }
         );
+      }
+
+      // Security: Only allow http and https protocols
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        return NextResponse.json(
+          {
+            error: 'invalid_request',
+            error_description: 'Redirect URIs must use http or https protocol',
+          },
+          { status: 400 }
+        );
+      }
+
+      // Security: In production, disallow localhost and private IPs
+      if (process.env.NODE_ENV === 'production') {
+        const hostname = parsedUrl.hostname.toLowerCase();
+        if (
+          hostname === 'localhost' ||
+          hostname === '127.0.0.1' ||
+          hostname === '::1' ||
+          hostname.startsWith('192.168.') ||
+          hostname.startsWith('10.') ||
+          hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./)
+        ) {
+          return NextResponse.json(
+            {
+              error: 'invalid_request',
+              error_description: 'Localhost and private IP redirect URIs are not allowed in production',
+            },
+            { status: 400 }
+          );
+        }
       }
     }
 
     const provider = getOAuthProvider();
 
-    // Register the client
-    const client = await provider.registerClient(client_name, redirect_uris);
+    // Register the client with the current user as owner
+    const client = await provider.registerClient(
+      client_name,
+      redirect_uris,
+      session.user.email // Use email as owner ID
+    );
 
     return NextResponse.json({
       client_id: client.id,
@@ -66,12 +103,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('OAuth client registration error:', error);
 
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
     return NextResponse.json(
       {
         error: 'server_error',
-        error_description: errorMessage,
+        error_description: 'An internal error occurred while registering the client. Please try again later.',
       },
       { status: 500 }
     );
@@ -98,8 +133,8 @@ export async function GET(request: NextRequest) {
 
     const provider = getOAuthProvider();
 
-    // List all clients
-    const clients = await provider.listClients();
+    // List only clients owned by the current user
+    const clients = await provider.listClients(session.user.email);
 
     return NextResponse.json({
       clients: clients.map(client => ({
@@ -112,12 +147,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('OAuth client listing error:', error);
 
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
     return NextResponse.json(
       {
         error: 'server_error',
-        error_description: errorMessage,
+        error_description: 'An internal error occurred while listing clients. Please try again later.',
       },
       { status: 500 }
     );

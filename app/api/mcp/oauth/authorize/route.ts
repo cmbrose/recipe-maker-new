@@ -52,12 +52,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('OAuth authorization error:', error);
 
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
+    // Do not leak internal error details to the client
     return NextResponse.json(
       {
         error: 'server_error',
-        error_description: errorMessage,
+        error_description: 'An internal error occurred. Please try again later.',
       },
       { status: 500 }
     );

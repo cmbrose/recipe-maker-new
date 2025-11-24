@@ -60,18 +60,21 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('OAuth token exchange error:', error);
 
+    // Use generic error messages to avoid information disclosure
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-    // Determine error type based on message
     let errorCode = 'server_error';
-    if (errorMessage.includes('Invalid') || errorMessage.includes('expired')) {
+    let errorDescription = 'An internal server error occurred.';
+
+    // Use a generic message for all invalid_grant scenarios
+    if (errorMessage.includes('Invalid') || errorMessage.includes('expired') || errorMessage.includes('mismatch') || errorMessage.includes('used')) {
       errorCode = 'invalid_grant';
+      errorDescription = 'The provided authorization grant is invalid, expired, or has been revoked.';
     }
 
     return NextResponse.json(
       {
         error: errorCode,
-        error_description: errorMessage,
+        error_description: errorDescription,
       },
       { status: 400 }
     );

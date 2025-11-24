@@ -216,14 +216,19 @@ This returns:
 **Step 2: Generate Code Challenge (PKCE)**
 
 ```javascript
+const crypto = require('crypto');
+
 // Generate code verifier (random string)
-const codeVerifier = base64URLEncode(crypto.randomBytes(32));
+const codeVerifier = crypto.randomBytes(32).toString('base64url');
 
 // Generate code challenge
-const codeChallenge = base64URLEncode(
-  crypto.createHash('sha256').update(codeVerifier).digest()
-);
+const codeChallenge = crypto
+  .createHash('sha256')
+  .update(codeVerifier)
+  .digest('base64url');
 ```
+
+Note: `base64url` encoding is available in Node.js 14.18.0+. For older versions or browsers, you'll need to implement base64url encoding manually.
 
 **Step 3: Request Authorization**
 
