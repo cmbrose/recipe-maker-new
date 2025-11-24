@@ -10,6 +10,8 @@ import { MCP_TOOLS } from '@/lib/mcp/tools';
 import type { MCPRequest, MCPResponse } from '@/lib/mcp/types';
 import z from 'zod';
 import { auth } from '@/auth';
+import { getOAuthProvider } from '@/lib/mcp/oauth/provider';
+import type { TokenInfo } from '@/lib/mcp/oauth/provider';
 
 /**
  * Handle MCP requests via POST
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'tools/call':
-        response.result = await handleToolCall(body.params);
+        response.result = await handleToolCall(request, body.params);
         break;
 
       default:
@@ -93,28 +95,78 @@ function getToolsList() {
 }
 
 /**
+ * Extract and verify Bearer token from request
+ */
+async function verifyBearerToken(request: NextRequest): Promise<TokenInfo | null> {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+  try {
+    const provider = getOAuthProvider();
+    const tokenInfo = await provider.verifyAccessToken(token);
+    return tokenInfo || null;
+  } catch (error) {
+    console.error('Token verification error:', error);
+    return null;
+  }
+}
+
+/**
+ * Check authentication for tool execution
+ * Supports both OAuth tokens (for MCP clients) and sessions (for browser/API)
+ */
+async function checkAuth(request: NextRequest): Promise<{ authenticated: boolean; user?: any }> {
+  // First, try OAuth token authentication (for MCP clients)
+  const tokenInfo = await verifyBearerToken(request);
+  if (tokenInfo) {
+    return {
+      authenticated: true,
+      user: {
+        id: tokenInfo.userId,
+        email: tokenInfo.userEmail,
+      },
+    };
+  }
+
+  // Fall back to session authentication (for browser/API)
+  const session = await auth();
+  if (session?.user) {
+    return {
+      authenticated: true,
+      user: session.user,
+    };
+  }
+
+  return { authenticated: false };
+}
+
+/**
  * Handle tool execution
  */
-async function handleToolCall(params: any) {
+async function handleToolCall(request: NextRequest, params: any) {
   const { name, arguments: args } = params;
 
   // Find the tool by name
   const tool = MCP_TOOLS.find(t => t.name === name);
-  
+
   if (!tool) {
     throw new Error(`Unknown tool: ${name}`);
   }
 
   if (tool.requiresAuth) {
-    const session = await auth();
-    if (!session?.user) {
+    const authResult = await checkAuth(request);
+    if (!authResult.authenticated) {
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ 
+            text: JSON.stringify({
               error: 'Authentication required',
-              message: 'You must be logged in to use this tool'
+              message: 'You must be authenticated to use this tool. For MCP clients, please authorize using OAuth 2.0.',
             }, null, 2),
           },
         ],
@@ -126,7 +178,7 @@ async function handleToolCall(params: any) {
   try {
     // Parse and validate arguments using Zod schema
     const validatedArgs = tool.inputSchema.parse(args);
-    
+
     // Execute the tool's handler with validated arguments
     return await tool.handler(validatedArgs);
   } catch (error) {

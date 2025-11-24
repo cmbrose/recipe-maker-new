@@ -39,5 +39,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       console.log(`✓ Sign-in allowed: ${user.email}`);
       return true;
     },
+    async redirect({ url, baseUrl }) {
+      // Check if this is an MCP OAuth flow by looking at the return URL
+      // NextAuth will redirect back to the page the user was on
+      // For MCP OAuth, we need to redirect to the callback endpoint
+
+      // This callback receives the url that NextAuth wants to redirect to
+      // We check if the user came from the MCP OAuth login flow
+      // by checking if the URL contains our callback path
+
+      // For MCP OAuth flows, redirect to our callback endpoint
+      // which will handle completing the OAuth flow
+      if (url.includes('/api/mcp/oauth/callback')) {
+        return url;
+      }
+
+      // For regular auth flows, use default behavior
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      } else if (new URL(url).origin === baseUrl) {
+        return url;
+      }
+      return baseUrl;
+    },
   },
 });

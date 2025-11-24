@@ -173,7 +173,10 @@ Configure your MCP client to make POST requests to:
 
 ### 3. Authentication
 
-Some MCP tools require authentication (like `create_recipe`). The authentication is handled automatically through NextAuth.js session management.
+Some MCP tools require authentication (like `create_recipe`). The application supports two authentication methods:
+
+1. **OAuth 2.0 with PKCE** (recommended for MCP clients) - For chat clients and external applications
+2. **Session-based authentication** - For browser-based access
 
 **Tools requiring authentication:**
 - `create_recipe` - Creating new recipes requires a logged-in user
@@ -182,12 +185,122 @@ Some MCP tools require authentication (like `create_recipe`). The authentication
 - `list_recipes` - Browse public recipes
 - `get_recipe` - View recipe details
 
-To authenticate:
+#### OAuth 2.0 Authentication for MCP Clients
+
+For chat clients (like Claude Desktop, Cline, etc.) that cannot perform browser-based login, we provide OAuth 2.0 with PKCE authentication.
+
+**Step 1: Register Your Client**
+
+First, register your MCP client to get a `client_id`. You need to be authenticated in the web app to do this:
+
+```bash
+curl -X POST http://localhost:3000/api/mcp/oauth/register \
+  -H "Content-Type: application/json" \
+  -b "your-session-cookie" \
+  -d '{
+    "client_name": "My MCP Client",
+    "redirect_uris": ["http://localhost:8080/callback"]
+  }'
+```
+
+This returns:
+```json
+{
+  "client_id": "abc123...",
+  "client_name": "My MCP Client",
+  "redirect_uris": ["http://localhost:8080/callback"],
+  "created_at": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Step 2: Generate Code Challenge (PKCE)**
+
+```javascript
+// Generate code verifier (random string)
+const codeVerifier = base64URLEncode(crypto.randomBytes(32));
+
+// Generate code challenge
+const codeChallenge = base64URLEncode(
+  crypto.createHash('sha256').update(codeVerifier).digest()
+);
+```
+
+**Step 3: Request Authorization**
+
+```bash
+curl -X POST http://localhost:3000/api/mcp/oauth/authorize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "abc123...",
+    "code_challenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+    "code_challenge_method": "S256",
+    "redirect_uri": "http://localhost:8080/callback",
+    "state": "optional-state-value"
+  }'
+```
+
+This returns:
+```json
+{
+  "authorization_url": "http://localhost:3000/api/mcp/oauth/login?session=xyz789...",
+  "session_id": "xyz789..."
+}
+```
+
+**Step 4: User Authorization**
+
+Direct the user to open the `authorization_url` in their browser. They will:
+1. Be redirected to Google OAuth to authenticate
+2. After successful authentication, be redirected to your `redirect_uri` with an authorization `code`
+
+**Step 5: Exchange Code for Access Token**
+
+```bash
+curl -X POST http://localhost:3000/api/mcp/oauth/token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "grant_type": "authorization_code",
+    "code": "auth-code-from-redirect",
+    "client_id": "abc123...",
+    "code_verifier": "original-code-verifier",
+    "redirect_uri": "http://localhost:8080/callback"
+  }'
+```
+
+This returns:
+```json
+{
+  "access_token": "your-access-token",
+  "token_type": "Bearer",
+  "expires_in": 2592000
+}
+```
+
+**Step 6: Use Access Token**
+
+Include the access token in MCP requests:
+
+```bash
+curl -X POST http://localhost:3000/api/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-access-token" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "create_recipe",
+      "arguments": {...}
+    }
+  }'
+```
+
+#### Session-Based Authentication (Browser)
+
+For browser-based access:
 1. Log in to the web application at `http://localhost:3000` using Google OAuth
 2. Your session cookie will automatically be sent with MCP requests from the same browser
-3. If using an external MCP client, you'll need to include the session cookie in requests
-
-**Note:** For programmatic access from external clients, you may want to add API key authentication by modifying `/app/api/mcp/route.ts`.
+3. No additional authentication steps needed
 
 ## Protocol Details
 
@@ -347,6 +460,31 @@ The MCP integration is implemented as a Next.js API route at `/app/api/mcp/route
 3. **Easy deployment**: Deploys with your app, no additional configuration needed
 4. **Authentication**: Can leverage existing Next.js authentication
 5. **Logging**: Uses your existing logging infrastructure
+
+### OAuth Data Persistence
+
+OAuth data (clients, authorization codes, and access tokens) is stored in JSON files for persistence:
+
+**Local Development:**
+- Default location: `<project-root>/data/oauth/`
+- Files are automatically created on first use
+- Data persists between server restarts
+
+**Production (Azure Container Apps):**
+- Use a volume mount to persist OAuth data
+- Set environment variable: `OAUTH_STORAGE_DIR=/mnt/oauth-data`
+- Configure volume mount in container deployment
+
+**Storage Files:**
+- `clients.json` - Registered OAuth clients
+- `codes.json` - Authorization codes (auto-cleaned after expiry)
+- `tokens.json` - Access tokens (auto-cleaned 7 days after expiry)
+
+The file-based storage provides:
+- Simple setup with no additional database needed
+- Automatic cleanup of expired codes and tokens
+- Production-ready with volume mounts
+- Easy backup and restore
 
 ## Troubleshooting
 
