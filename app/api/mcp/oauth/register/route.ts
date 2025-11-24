@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { randomUUID } from 'node:crypto';
 import { mcpOAuthProvider } from '@/lib/mcp/oauth/provider';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +15,7 @@ export async function POST(request: NextRequest) {
       redirect_uris: redirect_uris || [],
       client_name,
       client_id,
-      client_secret: client_secret || randomUUID(),
+      client_secret,
     });
 
     return NextResponse.json({

@@ -81,6 +81,10 @@ export class PersistentOAuthStore {
     const store = await loadStore(this.storePath);
     const client_id = metadata.client_id || randomUUID();
 
+    if (store.clients[client_id]) {
+      throw new Error(`client_id already exists: ${client_id}`);
+    }
+
     const client: StoredClient = {
       client_id,
       client_name: metadata.client_name,
@@ -111,6 +115,15 @@ export class PersistentOAuthStore {
 
   async saveToken(record: TokenRecord) {
     const store = await loadStore(this.storePath);
+
+    if (record.refreshToken) {
+      for (const [token, entry] of Object.entries(store.tokens)) {
+        if (entry.refreshToken === record.refreshToken) {
+          delete store.tokens[token];
+        }
+      }
+    }
+
     store.tokens[record.token] = record;
     await persist(this.storePath, store);
   }

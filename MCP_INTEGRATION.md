@@ -182,8 +182,8 @@ Some MCP tools require authentication (like `create_recipe`). The MCP server exp
 
 **Primary endpoints:**
 - `GET /api/mcp/oauth/authorize`
-- `POST /api/mcp/oauth/token` (uses `client_secret_post` when a secret exists for the client)
-- `POST /api/mcp/oauth/register` (dynamic client registration)
+- `POST /api/mcp/oauth/token` (supports public clients and `client_secret_post` when a secret exists)
+- `POST /api/mcp/oauth/register` (dynamic client registration; rejects duplicate `client_id`s)
 
 **Scopes:** `mcp:tools`
 

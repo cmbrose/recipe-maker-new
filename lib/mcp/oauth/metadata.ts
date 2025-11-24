@@ -5,12 +5,18 @@ import { mcpOAuthProvider } from './provider';
 export function buildAuthorizationServerMetadata(requestUrl: string) {
   const issuerUrl = new URL(getOAuthBaseUrl(requestUrl));
 
-  return createOAuthMetadata({
+  const metadata = createOAuthMetadata({
     provider: mcpOAuthProvider,
     issuerUrl,
     baseUrl: issuerUrl,
     scopesSupported: DEFAULT_SCOPES,
   });
+
+  const tokenAuthMethods = new Set([...(metadata.token_endpoint_auth_methods_supported || []), 'none']);
+  return {
+    ...metadata,
+    token_endpoint_auth_methods_supported: Array.from(tokenAuthMethods),
+  };
 }
 
 export function buildProtectedResourceMetadata(requestUrl: string) {
