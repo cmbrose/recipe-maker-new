@@ -177,13 +177,13 @@ Some MCP tools require authentication (like `create_recipe`). The MCP server exp
 
 **OAuth metadata:**
 - Authorization server metadata: `/.well-known/oauth-authorization-server` under `/api/mcp/oauth` (generated with the MCP SDK's
-  helper to match `mcpAuthRouter` defaults)
+  `createOAuthMetadata` helper to match `mcpAuthRouter` defaults)
 - Protected resource metadata: `/.well-known/oauth-protected-resource` under `/api/mcp/oauth`
 
 **Primary endpoints:**
 - `GET /api/mcp/oauth/authorize`
-- `POST /api/mcp/oauth/token` (supports public clients and `client_secret_post` when a secret exists)
-- `POST /api/mcp/oauth/register` (dynamic client registration; rejects duplicate `client_id`s)
+- `POST /api/mcp/oauth/token` (requires `client_secret_post` for registered clients)
+- `POST /api/mcp/oauth/register` (dynamic client registration; server-issued `client_id` and `client_secret`)
 
 **Scopes:** `mcp:tools`
 

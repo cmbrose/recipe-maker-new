@@ -36,3 +36,13 @@ export function parseScopes(scopeParam?: string | null) {
     .map((scope) => scope.trim())
     .filter(Boolean);
 }
+
+export function isValidUrl(value: string): boolean {
+  try {
+    // eslint-disable-next-line no-new
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}

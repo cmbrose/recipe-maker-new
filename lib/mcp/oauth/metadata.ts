@@ -12,10 +12,8 @@ export function buildAuthorizationServerMetadata(requestUrl: string) {
     scopesSupported: DEFAULT_SCOPES,
   });
 
-  const tokenAuthMethods = new Set([...(metadata.token_endpoint_auth_methods_supported || []), 'none']);
   return {
     ...metadata,
-    token_endpoint_auth_methods_supported: Array.from(tokenAuthMethods),
   };
 }
 

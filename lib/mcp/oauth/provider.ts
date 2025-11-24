@@ -37,7 +37,6 @@ export class McpOAuthProvider {
     return {
       registerClient: (metadata) =>
         this.store.registerClient({
-          client_id: metadata.client_id,
           client_name: metadata.client_name,
           redirect_uris: metadata.redirect_uris,
           client_secret: metadata.client_secret,
@@ -46,13 +45,12 @@ export class McpOAuthProvider {
     } satisfies OAuthRegisteredClientsStore;
   }
 
-  async registerClient(metadata: { client_name?: string; redirect_uris: string[]; client_id?: string; client_secret?: string }) {
+  async registerClient(metadata: { client_name?: string; redirect_uris: string[]; client_secret?: string }) {
     if (!metadata.redirect_uris?.length) {
       throw new Error('redirect_uris are required');
     }
 
     return this.store.registerClient({
-      client_id: metadata.client_id,
       client_name: metadata.client_name,
       client_secret: metadata.client_secret,
       redirect_uris: metadata.redirect_uris,
@@ -66,7 +64,7 @@ export class McpOAuthProvider {
   async issueAuthorizationCode(request: AuthorizationRequest): Promise<AuthorizationCodeRecord> {
     const client = await this.store.getClient(request.clientId);
     if (!client) {
-      throw new Error('Unknown client');
+      throw new Error('Invalid client_id: client not found or not registered');
     }
 
     if (!client.redirect_uris.includes(request.redirectUri)) {
@@ -143,10 +141,6 @@ export class McpOAuthProvider {
     const refreshedToken = await this.store.getTokenByRefreshToken(params.refreshToken);
     if (!refreshedToken) {
       throw new Error('Invalid refresh token');
-    }
-
-    if (refreshedToken.refreshToken !== params.refreshToken) {
-      throw new Error('Refresh token does not match');
     }
 
     if (refreshedToken.clientId !== params.clientId) {

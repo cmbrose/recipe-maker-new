@@ -6,7 +6,7 @@ export type StoredClient = {
   client_id: string;
   client_name?: string;
   redirect_uris: string[];
-  client_secret?: string;
+  client_secret: string;
   createdAt: number;
 };
 
@@ -77,19 +77,18 @@ export class PersistentOAuthStore {
     return store.clients[clientId];
   }
 
-  async registerClient(metadata: Omit<StoredClient, 'createdAt' | 'client_id'> & { client_id?: string }): Promise<StoredClient> {
+  async registerClient(metadata: Omit<StoredClient, 'createdAt' | 'client_id' | 'client_secret'> & { client_secret?: string }): Promise<StoredClient> {
     const store = await loadStore(this.storePath);
-    const client_id = metadata.client_id || randomUUID();
-
-    if (store.clients[client_id]) {
-      throw new Error(`client_id already exists: ${client_id}`);
+    let client_id = randomUUID();
+    while (store.clients[client_id]) {
+      client_id = randomUUID();
     }
 
     const client: StoredClient = {
       client_id,
       client_name: metadata.client_name,
       redirect_uris: metadata.redirect_uris,
-      client_secret: metadata.client_secret,
+      client_secret: metadata.client_secret || randomUUID(),
       createdAt: Date.now(),
     };
 
@@ -107,6 +106,8 @@ export class PersistentOAuthStore {
   async useAuthorizationCode(code: string): Promise<AuthorizationCodeRecord | undefined> {
     const store = await loadStore(this.storePath);
     const record = store.codes[code];
+    // NOTE: File-based persistence cannot guarantee atomic read-delete operations. Concurrent requests could race to reuse a
+    // code before deletion. Consider a transactional store for production deployments.
     if (!record) return undefined;
     delete store.codes[code];
     await persist(this.storePath, store);
@@ -131,6 +132,8 @@ export class PersistentOAuthStore {
   async getToken(token: string): Promise<TokenRecord | undefined> {
     const store = await loadStore(this.storePath);
     const record = store.tokens[token];
+    // NOTE: Expiration checks and deletions are not atomic in this file-backed store; concurrent requests could briefly reuse an
+    // expired token. Prefer a transactional backend for stronger guarantees.
     if (!record) return undefined;
     if (record.expiresAt < Date.now()) {
       delete store.tokens[token];
@@ -143,6 +146,8 @@ export class PersistentOAuthStore {
   async getTokenByRefreshToken(refreshToken: string): Promise<TokenRecord | undefined> {
     const store = await loadStore(this.storePath);
     const record = Object.values(store.tokens).find((entry) => entry.refreshToken === refreshToken);
+    // NOTE: Expiration checks and deletions are not atomic in this file-backed store; concurrent requests could briefly reuse an
+    // expired refresh token. Prefer a transactional backend for stronger guarantees.
     if (!record) return undefined;
     if (record.refreshExpiresAt && record.refreshExpiresAt < Date.now()) {
       delete store.tokens[record.token];

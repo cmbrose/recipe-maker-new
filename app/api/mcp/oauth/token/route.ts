@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { mcpOAuthProvider } from '@/lib/mcp/oauth/provider';
 import { parseScopes } from '@/lib/mcp/oauth/utils';
@@ -24,8 +25,22 @@ export async function POST(request: NextRequest) {
     }
 
     const client = await mcpOAuthProvider.getClient(clientId);
-    if (client?.client_secret && clientSecret !== client.client_secret) {
-      return NextResponse.json({ error: 'invalid_client', error_description: 'client_secret is invalid' }, { status: 401 });
+    if (client?.client_secret) {
+      if (!clientSecret) {
+        return NextResponse.json(
+          { error: 'invalid_client', error_description: 'client_secret is required for this client' },
+          { status: 401 },
+        );
+      }
+
+      const providedSecret = Buffer.from(clientSecret, 'utf-8');
+      const storedSecret = Buffer.from(client.client_secret, 'utf-8');
+      if (providedSecret.length !== storedSecret.length || !timingSafeEqual(providedSecret, storedSecret)) {
+        return NextResponse.json(
+          { error: 'invalid_client', error_description: 'client_secret is invalid' },
+          { status: 401 },
+        );
+      }
     }
 
     try {
@@ -53,8 +68,22 @@ export async function POST(request: NextRequest) {
     }
 
     const client = await mcpOAuthProvider.getClient(clientId);
-    if (client?.client_secret && clientSecret !== client.client_secret) {
-      return NextResponse.json({ error: 'invalid_client', error_description: 'client_secret is invalid' }, { status: 401 });
+    if (client?.client_secret) {
+      if (!clientSecret) {
+        return NextResponse.json(
+          { error: 'invalid_client', error_description: 'client_secret is required for this client' },
+          { status: 401 },
+        );
+      }
+
+      const providedSecret = Buffer.from(clientSecret, 'utf-8');
+      const storedSecret = Buffer.from(client.client_secret, 'utf-8');
+      if (providedSecret.length !== storedSecret.length || !timingSafeEqual(providedSecret, storedSecret)) {
+        return NextResponse.json(
+          { error: 'invalid_client', error_description: 'client_secret is invalid' },
+          { status: 401 },
+        );
+      }
     }
 
     try {
