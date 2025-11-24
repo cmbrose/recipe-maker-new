@@ -253,6 +253,7 @@ Complete these steps once - you won't need to repeat them for future deployments
 - [ ] Configure OAuth redirect URI: `https://brose-recipes.com/api/auth/callback/google`
 - [ ] Add GitHub Secrets: `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 - [ ] Add allowed emails to production Cosmos DB
+- [ ] Configure Azure Storage for MCP OAuth persistent storage (section 6)
 
 ## Regular Deployments (After Setup)
 
@@ -278,8 +279,77 @@ All environment variables are set automatically by the deployment workflow:
 | `GOOGLE_CLIENT_ID` | GitHub Secret | Google OAuth Client ID |
 | `GOOGLE_CLIENT_SECRET` | GitHub Secret | Google OAuth Client Secret |
 | `AUTH_URL` | Set by workflow | Production URL (`https://brose-recipes.com`) |
+| `NEXTAUTH_URL` | Set by workflow | NextAuth callback URL (`https://brose-recipes.com`) |
+| `OAUTH_STORAGE_DIR` | Set by workflow | OAuth data storage path (`/mnt/oauth-data`) |
+| `NODE_ENV` | Set by workflow | Environment (`production`) |
 
 Secrets (`AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) are stored as **Container App secrets** (encrypted at rest) and referenced with `secretref:` in environment variables.
+
+---
+
+## 6. Configure Persistent Storage for MCP OAuth (One-Time Setup)
+
+The MCP OAuth feature requires persistent storage to maintain OAuth client registrations, authorization codes, and access tokens across container restarts.
+
+### Create Azure Storage Account and File Share
+
+```bash
+# Create storage account (if not already exists)
+az storage account create \
+  --name recipesoauth \
+  --resource-group recipe-maker-rg \
+  --location centralus \
+  --sku Standard_LRS
+
+# Get storage account key
+STORAGE_KEY=$(az storage account keys list \
+  --account-name recipesoauth \
+  --resource-group recipe-maker-rg \
+  --query "[0].value" \
+  --output tsv)
+
+# Create file share for OAuth data
+az storage share create \
+  --name oauth-data \
+  --account-name recipesoauth \
+  --account-key $STORAGE_KEY
+```
+
+### Configure Storage Mount in Container App
+
+```bash
+# Add storage to Container App environment
+az containerapp env storage set \
+  --name recipe-maker-container-env \
+  --resource-group recipe-maker-rg \
+  --storage-name oauth-storage \
+  --azure-file-account-name recipesoauth \
+  --azure-file-account-key $STORAGE_KEY \
+  --azure-file-share-name oauth-data \
+  --access-mode ReadWrite
+
+# Update Container App to mount the storage
+az containerapp update \
+  --name recipe-maker-container \
+  --resource-group recipe-maker-rg \
+  --set-env-vars OAUTH_STORAGE_DIR=/mnt/oauth-data \
+  --volume-name oauth-volume \
+  --volume-type AzureFile \
+  --volume-storage-name oauth-storage \
+  --volume-mount-path /mnt/oauth-data
+```
+
+### Verify Storage Configuration
+
+```bash
+# Check storage is mounted
+az containerapp show \
+  --name recipe-maker-container \
+  --resource-group recipe-maker-rg \
+  --query "properties.template.volumes"
+```
+
+**Note:** The deployment workflow already sets `OAUTH_STORAGE_DIR=/mnt/oauth-data`. You just need to configure the storage mount once as shown above.
 
 ---
 
