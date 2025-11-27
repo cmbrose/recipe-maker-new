@@ -111,6 +111,13 @@ export class MCPOAuthProvider {
     if (request.codeChallengeMethod !== 'S256' && request.codeChallengeMethod !== 'plain') {
       throw new Error('Invalid code_challenge_method');
     }
+    // Warn or reject if 'plain' is used (RFC 7636 best practice)
+    if (request.codeChallengeMethod === 'plain') {
+      console.warn('Client using insecure PKCE method "plain". Consider upgrading to S256.');
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('code_challenge_method "plain" is not allowed in production');
+      }
+    }
 
     // Generate session ID
     const sessionId = randomBytes(32).toString('hex');

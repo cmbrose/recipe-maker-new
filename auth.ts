@@ -50,8 +50,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // For MCP OAuth flows, redirect to our callback endpoint
       // which will handle completing the OAuth flow
-      if (url.includes('/api/mcp/oauth/callback')) {
-        return url;
+      try {
+        const parsedUrl = new URL(url, baseUrl);
+        if (parsedUrl.pathname === '/api/mcp/oauth/callback' && parsedUrl.origin === baseUrl) {
+          return url;
+        }
+      } catch {
+        // Invalid URL, continue with default logic
       }
 
       // For regular auth flows, use default behavior

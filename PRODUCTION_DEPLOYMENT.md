@@ -339,6 +339,12 @@ az containerapp update \
   --volume-mount-path /mnt/oauth-data
 ```
 
+> **Warning:**  
+> The `--set-env-vars` flag in the above `az containerapp update` command will overwrite all existing environment variables for the container app, leaving only `OAUTH_STORAGE_DIR` set.  
+> To avoid accidentally removing other required environment variables, either:
+> - Include all required environment variables in the `--set-env-vars` flag, **OR**
+> - Prefer to manage environment variables via the deployment workflow (see lines 110-112, 137-139 in `deploy-container-app.yml`), and use this command only for initial storage mount configuration.
+> - If you only need to update the storage mount, consider using the Azure Portal or updating the deployment workflow instead of running this command manually.
 ### Verify Storage Configuration
 
 ```bash

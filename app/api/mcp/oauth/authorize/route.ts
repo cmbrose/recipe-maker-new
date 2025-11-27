@@ -31,6 +31,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Explicit type and length validation
+    if (
+      typeof client_id !== 'string' || client_id.length > 256 ||
+      typeof code_challenge !== 'string' || code_challenge.length > 256 ||
+      typeof redirect_uri !== 'string' || redirect_uri.length > 2048
+    ) {
+      return NextResponse.json(
+        {
+          error: 'invalid_request',
+          error_description: 'Invalid parameter types or lengths',
+        },
+        { status: 400 }
+      );
+    }
     const provider = getOAuthProvider();
 
     // Initiate authorization
