@@ -35,7 +35,6 @@ const createRecipeSchema = z.object({
 export const createRecipeTool: MCPTool<typeof createRecipeSchema> = {
   name: 'create_recipe',
   description: 'Create a new recipe. Requires authentication. Returns the created recipe with its assigned ID.',
-  requiresAuth: true,
   inputSchema: createRecipeSchema,
   handler: async (args) => {
     // Args are automatically typed as z.infer<typeof createRecipeSchema>

@@ -17,7 +17,6 @@ const getRecipeSchema = z.object({
 export const getRecipeTool: MCPTool<typeof getRecipeSchema> = {
   name: 'get_recipe',
   description: 'Retrieve the full details of a single recipe by its ID. The ID can be obtained from the list_recipes tool.',
-  requiresAuth: false,
   inputSchema: getRecipeSchema,
   handler: async (args) => {
     const recipe = await getRecipe(args.id);

@@ -26,7 +26,6 @@ const listRecipesSchema = z.object({
 export const listRecipesTool: MCPTool<typeof listRecipesSchema> = {
   name: 'list_recipes',
   description: 'List recipes with optional filtering, sorting, and pagination. Returns recipes matching the specified criteria.',
-  requiresAuth: false,
   inputSchema: listRecipesSchema,
   handler: async (args) => {
     // Args are automatically typed as z.infer<typeof listRecipesSchema>

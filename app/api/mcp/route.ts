@@ -105,24 +105,6 @@ async function handleToolCall(params: any) {
     throw new Error(`Unknown tool: ${name}`);
   }
 
-  if (tool.requiresAuth) {
-    const session = await auth();
-    if (!session?.user) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({ 
-              error: 'Authentication required',
-              message: 'You must be logged in to use this tool'
-            }, null, 2),
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
-
   try {
     // Parse and validate arguments using Zod schema
     const validatedArgs = tool.inputSchema.parse(args);

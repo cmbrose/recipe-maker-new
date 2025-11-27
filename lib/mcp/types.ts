@@ -27,6 +27,5 @@ export interface MCPTool<TSchema extends z.ZodType> {
   name: string;
   description: string;
   inputSchema: TSchema;
-  requiresAuth: boolean;
   handler: (args: z.infer<TSchema>) => Promise<any>;
 }
