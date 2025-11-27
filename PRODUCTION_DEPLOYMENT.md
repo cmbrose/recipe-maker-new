@@ -54,6 +54,15 @@ Your production Google OAuth Client Secret.
 GOCSPX-AbCdEfGhIjKlMnOpQrStUvWxYz
 ```
 
+#### `MCP_OAUTH_STORAGE_ACCOUNT` ⭐ **NEW**
+Storage account name that backs the Azure Files share for the MCP OAuth store.
+
+#### `MCP_OAUTH_STORAGE_KEY` ⭐ **NEW**
+Access key for the storage account above (use the primary key).
+
+#### `MCP_OAUTH_STORAGE_SHARE`
+Azure Files share name that will hold the `mcp-oauth-store.json` file. Defaults to `mcp-oauth-store` if not set.
+
 ---
 
 ## 2. Configure Google OAuth for Production (One-Time Setup)
@@ -165,7 +174,51 @@ rm .env.production
 
 ---
 
-## 4. Deploy to Production
+## 4. Configure MCP OAuth Persistent Storage (One-Time Setup)
+
+The MCP OAuth server uses a file-backed store for registered clients and tokens. In production, mount an Azure Files share so the
+store persists across revisions and replicas.
+
+### Step 1: Create or Reuse a Storage Account
+
+If you already have a storage account, reuse it; otherwise create one:
+
+```bash
+az storage account create \
+  --name <storage-account-name> \
+  --resource-group recipe-maker-rg \
+  --location centralus \
+  --sku Standard_LRS
+```
+
+### Step 2: Create a File Share for MCP OAuth data
+
+```bash
+az storage share-rm create \
+  --resource-group recipe-maker-rg \
+  --storage-account <storage-account-name> \
+  --name ${MCP_OAUTH_STORAGE_SHARE:-mcp-oauth-store}
+```
+
+### Step 3: Capture credentials for GitHub
+
+```bash
+az storage account keys list \
+  --account-name <storage-account-name> \
+  --resource-group recipe-maker-rg \
+  --query "[0].value" \
+  --output tsv
+```
+
+Add the account name, key, and share name as GitHub secrets (`MCP_OAUTH_STORAGE_ACCOUNT`, `MCP_OAUTH_STORAGE_KEY`, and optional
+`MCP_OAUTH_STORAGE_SHARE`). The deployment workflow mounts the share at `/mnt/mcp-oauth-store` and sets
+`MCP_OAUTH_STORE_PATH=/mnt/mcp-oauth-store/mcp-oauth-store.json`.
+
+Local testing keeps using the default `data/mcp-oauth-store.json` path; no additional setup is required locally.
+
+---
+
+## 5. Deploy to Production
 
 ### Automatic Deployment (Recommended)
 
@@ -206,7 +259,7 @@ After deployment completes:
 
 ---
 
-## 5. Monitoring and Troubleshooting
+## 6. Monitoring and Troubleshooting
 
 ### View Container Logs
 

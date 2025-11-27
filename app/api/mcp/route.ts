@@ -10,6 +10,7 @@ import { MCP_TOOLS } from '@/lib/mcp/tools';
 import type { MCPRequest, MCPResponse } from '@/lib/mcp/types';
 import z from 'zod';
 import { auth } from '@/auth';
+import { mcpOAuthProvider } from '@/lib/mcp/oauth/provider';
 
 /**
  * Handle MCP requests via POST
@@ -17,6 +18,7 @@ import { auth } from '@/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as MCPRequest;
+    const authContext = await resolveMcpAuth(request);
     
     // Validate JSON-RPC 2.0 format
     if (body.jsonrpc !== '2.0') {
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'tools/call':
-        response.result = await handleToolCall(body.params);
+        response.result = await handleToolCall(body.params, authContext);
         break;
 
       default:
@@ -95,7 +97,32 @@ function getToolsList() {
 /**
  * Handle tool execution
  */
-async function handleToolCall(params: any) {
+type AuthContext = {
+  user: { email?: string | null; name?: string | null } | null;
+  error?: string;
+};
+
+async function resolveMcpAuth(request: NextRequest): Promise<AuthContext> {
+  const authorizationHeader = request.headers.get('authorization');
+  if (authorizationHeader?.startsWith('Bearer ')) {
+    const token = authorizationHeader.slice('Bearer '.length);
+    try {
+      const tokenRecord = await mcpOAuthProvider.verifyAccessToken(token);
+      return { user: tokenRecord.user };
+    } catch (error) {
+      return { user: null, error: error instanceof Error ? error.message : 'Invalid token' };
+    }
+  }
+
+  const session = await auth();
+  if (session?.user) {
+    return { user: session.user };
+  }
+
+  return { user: null };
+}
+
+async function handleToolCall(params: any, authContext: AuthContext) {
   const { name, arguments: args } = params;
 
   // Find the tool by name
@@ -106,15 +133,29 @@ async function handleToolCall(params: any) {
   }
 
   if (tool.requiresAuth) {
-    const session = await auth();
-    if (!session?.user) {
+    if (authContext.error) {
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ 
+            text: JSON.stringify({
+              error: 'Authentication failed',
+              message: authContext.error,
+            }, null, 2),
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    if (!authContext.user) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
               error: 'Authentication required',
-              message: 'You must be logged in to use this tool'
+              message: 'Provide a Bearer token issued by the MCP OAuth server to call this tool',
             }, null, 2),
           },
         ],
