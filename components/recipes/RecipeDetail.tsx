@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import { useRecipe } from '@/lib/hooks/useRecipes';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,29 @@ interface RecipeDetailProps {
 
 export function RecipeDetail({ id }: RecipeDetailProps) {
   const { data: recipe, isLoading, error } = useRecipe(id);
+  const [copied, setCopied] = useState(false);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimeoutRef.current) {
+        clearTimeout(copiedTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      if (copiedTimeoutRef.current) {
+        clearTimeout(copiedTimeoutRef.current);
+      }
+      copiedTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API not available or permission denied
+    }
+  };
 
   if (isLoading) {
     return (
@@ -58,6 +82,9 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
           <AuthButton href={`/recipes/${id}/edit`} variant="outline">
             Edit
           </AuthButton>
+          <Button variant="outline" onClick={handleCopyLink}>
+            {copied ? 'Copied!' : 'Copy Link'}
+          </Button>
         </div>
       </div>
 
