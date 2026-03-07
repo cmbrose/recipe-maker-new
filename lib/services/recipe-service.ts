@@ -1,5 +1,6 @@
 // Recipe service - MongoDB version for Cosmos DB
 import { getRecipesCollection, ObjectId } from '@/lib/db/mongo';
+import { syncTags, getAllTagNames } from '@/lib/services/tag-service';
 import type { Recipe, CreateRecipeInput, UpdateRecipeInput, RecipeFilters, RecipeListResult, SourceKind } from '@/types/recipe';
 import type { WithId, Document } from 'mongodb';
 
@@ -182,7 +183,9 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
   const result = await collection.insertOne(doc);
   const inserted = await collection.findOne({ _id: result.insertedId });
   if (!inserted) throw new Error('Failed to create recipe');
-  return toRecipe(inserted as WithId<Document>);
+  const recipe = toRecipe(inserted as WithId<Document>);
+  await syncTags(recipe.tags);
+  return recipe;
 }
 
 /**
@@ -197,7 +200,11 @@ export async function updateRecipe(input: UpdateRecipeInput): Promise<Recipe> {
   await collection.updateOne({ _id: new ObjectId(id) }, { $set: update });
   const doc = await collection.findOne({ _id: new ObjectId(id) });
   if (!doc) throw new Error('Recipe not found');
-  return toRecipe(doc as WithId<Document>);
+  const recipe = toRecipe(doc as WithId<Document>);
+  if (data.tags) {
+    await syncTags(recipe.tags);
+  }
+  return recipe;
 }
 
 /**
@@ -217,14 +224,11 @@ export async function deleteRecipe(id: string): Promise<void> {
 }
 
 /**
- * Get all unique tags across all recipes (for autocomplete)
+ * Get all unique tags across all recipes (for autocomplete).
+ * Uses the dedicated tags collection for performance.
  */
 export async function getAllTags(): Promise<string[]> {
-  const collection = await getRecipesCollection();
-  const docs = await collection.find({}, { projection: { tags: 1 } }).toArray();
-  const allTags = docs.flatMap((r) => (r.tags ? r.tags : []));
-  const uniqueTags = Array.from(new Set(allTags));
-  return uniqueTags.sort();
+  return getAllTagNames();
 }
 
 /**

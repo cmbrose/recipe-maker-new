@@ -89,3 +89,11 @@ export function useCreateRecipeFromUrl() {
     },
   });
 }
+
+export function useTags() {
+  return useQuery({
+    queryKey: ['tags'],
+    queryFn: () => recipeApi.getTags(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+}
