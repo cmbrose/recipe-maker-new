@@ -30,4 +30,9 @@ export async function getRecipesCollection(): Promise<Collection> {
   return database.collection('Recipe');
 }
 
+export async function getTagsCollection(): Promise<Collection> {
+  const database = await getDb();
+  return database.collection('Tag');
+}
+
 export { ObjectId };

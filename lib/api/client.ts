@@ -70,6 +70,10 @@ export const recipeApi = {
       body: JSON.stringify({ url }),
     });
   },
+
+  getTags: async () => {
+    return fetchAPI<string[]>(`/api/recipes/tags`);
+  },
 };
 
 // Menu API
