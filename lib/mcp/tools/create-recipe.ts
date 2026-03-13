@@ -5,7 +5,7 @@
  */
 
 import { z } from 'zod';
-import { createRecipe } from '@/lib/services/recipe-service';
+import { createRecipe, markRecipeAsViewed } from '@/lib/services/recipe-service';
 import type { MCPTool } from '../types';
 import type { CreateRecipeInput, IngredientGroup } from '@/types/recipe';
 
@@ -55,6 +55,9 @@ export const createRecipeTool: MCPTool<typeof createRecipeSchema> = {
 
     // Create the recipe
     const recipe = await createRecipe(input);
+
+    // Mark as viewed so it appears at the top when sorted by last viewed
+    await markRecipeAsViewed(recipe.id);
 
     // Return result in MCP format
     return {
