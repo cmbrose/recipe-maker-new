@@ -27,6 +27,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { TagInput } from '@/components/shared/TagInput';
 import type { Recipe } from '@/types/recipe';
 
 // Generic auto-expanding field array hook
@@ -164,7 +165,6 @@ function IngredientGroupItems({ control, groupIndex }: { control: Control<Recipe
 }
 
 export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEditorProps) {
-    const [tagInput, setTagInput] = useState('');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -262,19 +262,6 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
             const message = error instanceof Error ? error.message : 'An unknown error occurred';
             setSubmitError(message);
         }
-    };
-
-    const addTag = () => {
-        const trimmed = tagInput.trim();
-        if (trimmed && !form.getValues('tags').includes(trimmed)) {
-            form.setValue('tags', [...form.getValues('tags'), trimmed]);
-            setTagInput('');
-        }
-    };
-
-    const removeTag = (index: number) => {
-        const tags = form.getValues('tags');
-        form.setValue('tags', tags.filter((_, i) => i !== index));
     };
 
 
@@ -503,41 +490,12 @@ export function RecipeEditor({ recipe, onSave, onDelete, isLoading }: RecipeEdit
                     {/* Tags */}
                     <div className="space-y-4">
                         <h2 className="text-2xl font-bold">Tags</h2>
-                        <div className="flex gap-2">
-                            <Input
-                                placeholder="Add a tag (e.g., dinner, dessert, quick)"
-                                value={tagInput}
-                                onChange={(e) => setTagInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        addTag();
-                                    }
-                                }}
-                            />
-                            <Button type="button" onClick={addTag} variant="outline">
-                                Add
-                            </Button>
-                        </div>
-                        {tags.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                                {tags.map((tag, index) => (
-                                    <div
-                                        key={index}
-                                        className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                                    >
-                                        {tag}
-                                        <button
-                                            type="button"
-                                            onClick={() => removeTag(index)}
-                                            className="hover:text-primary/70"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <TagInput
+                            value={tags}
+                            onChange={(newTags) => form.setValue('tags', newTags)}
+                            placeholder="Add a tag (e.g., dinner, dessert, quick)"
+                            disabled={isLoading}
+                        />
                     </div>
 
                     {/* Notes */}
